@@ -88,7 +88,7 @@ const scoringRules = [
 export default function Home() {
   return (
     <main
-      className="min-h-[100dvh] overflow-hidden bg-[#f5f1e8] text-[#152016]"
+      className="app-page overflow-hidden text-ink"
       id="main-content"
     >
       <HeroSection hostCities={hostCities} leaderboard={leaderboard} />

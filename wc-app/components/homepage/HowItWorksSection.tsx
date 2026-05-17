@@ -13,7 +13,7 @@ export function HowItWorksSection({ steps }: HowItWorksSectionProps) {
     >
       <div>
         <SectionEyebrow>How it works</SectionEyebrow>
-        <h2 className="mt-4 max-w-xl text-4xl font-black leading-none tracking-[-0.045em] sm:text-6xl">
+        <h2 className="mt-4 max-w-xl text-4xl font-black leading-none tracking-display sm:text-6xl">
           A private tournament inside the tournament.
         </h2>
       </div>
@@ -32,10 +32,10 @@ type StepCardProps = {
 
 function StepCard({ step }: StepCardProps) {
   return (
-    <article className="rounded-[1.5rem] border border-[#152016]/12 bg-[#fff8ec]/65 p-6 shadow-[0_24px_70px_-56px_rgba(21,32,22,0.65)]">
-      <p className="font-mono text-sm font-black text-[#d24a2a]">{step.kicker}</p>
+    <article className="rounded-panel border border-ink/12 bg-surface/65 p-6 shadow-stat">
+      <p className="font-mono text-sm font-black text-terracotta">{step.kicker}</p>
       <h3 className="mt-8 text-xl font-black tracking-tight">{step.title}</h3>
-      <p className="mt-4 text-sm leading-6 text-[#405143]">{step.text}</p>
+      <p className="mt-4 text-sm leading-6 text-muted">{step.text}</p>
     </article>
   );
 }

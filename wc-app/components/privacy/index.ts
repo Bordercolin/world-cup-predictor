@@ -1,0 +1,1 @@
+export { PrivacyPageContent } from "./PrivacyPageContent";

@@ -25,12 +25,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <input name="next" type="hidden" value={params.next ?? "/home"} />
 
         <div className="space-y-2">
-          <label className="text-sm font-bold text-[#152016]" htmlFor="email">
+          <label className="text-sm font-bold text-ink" htmlFor="email">
             Email
           </label>
           <input
             autoComplete="email"
-            className="w-full rounded-2xl border border-[#152016]/15 bg-[#f5f1e8] px-4 py-3 text-base outline-none transition-colors focus:border-[#1d345e]"
+            className="form-field"
             id="email"
             name="email"
             placeholder="you@example.com"
@@ -40,12 +40,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-bold text-[#152016]" htmlFor="password">
+          <label className="text-sm font-bold text-ink" htmlFor="password">
             Password
           </label>
           <input
             autoComplete="current-password"
-            className="w-full rounded-2xl border border-[#152016]/15 bg-[#f5f1e8] px-4 py-3 text-base outline-none transition-colors focus:border-[#1d345e]"
+            className="form-field"
             id="password"
             name="password"
             placeholder="Your password"
@@ -55,15 +55,15 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         </div>
 
         <button
-          className="w-full rounded-full bg-[#152016] px-7 py-4 text-center text-sm font-bold text-[#fff8ec] transition-transform hover:-translate-y-0.5 active:translate-y-0"
+          className="w-full rounded-full bg-ink px-7 py-4 text-center text-sm font-bold text-surface transition-transform hover:-translate-y-0.5 active:translate-y-0"
           type="submit"
         >
           Sign in
         </button>
 
-        <p className="text-center text-sm text-[#405143]">
+        <p className="text-center text-sm text-muted">
           New to Prono Club?{" "}
-          <Link className="font-bold text-[#152016] underline-offset-4 hover:underline" href="/register">
+          <Link className="font-bold text-ink underline-offset-4 hover:underline" href="/register">
             Create an account
           </Link>
         </p>

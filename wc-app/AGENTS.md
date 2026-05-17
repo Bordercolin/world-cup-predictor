@@ -8,6 +8,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Before changing product behavior, data flows, Supabase code, scoring, predictions, groups, or power-ups, read `PROJECT.md` for the current project model and implementation status.
 
+Before changing UI, layout, typography, color, spacing, or component styling, read `DESIGN.md` and use the semantic tokens in `app/globals.css`.
+
+When creating or substantially rebuilding a page, extract page-specific UI into components under `components/<page-name>/`, where `<page-name>` matches the route segment or page name. Keep `app/**/page.tsx` focused on route-level data loading, auth/redirects, and composition. For example, `/home` should use components from `components/home/`.
+
 Local skills live in `.agents/skills/`. They are not optional when a task matches their scope: read the relevant `SKILL.md` before planning, editing, or reviewing code.
 
 ## Skill Routing

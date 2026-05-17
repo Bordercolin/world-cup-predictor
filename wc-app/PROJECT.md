@@ -28,7 +28,7 @@ Implemented:
 - Authenticated dashboard shell at `/home`.
 - Static legal pages at `/privacy` and `/terms`.
 - Supabase SSR clients in `utils/supabase/client.ts` and `utils/supabase/server.ts`.
-- A `proxy.ts` file that describes auth refresh and redirects.
+- A `proxy.ts` file that Next.js 16 recognizes as middleware/proxy behavior for auth refresh and redirects.
 
 Not yet implemented in app logic:
 
@@ -42,7 +42,7 @@ Not yet implemented in app logic:
 - Rivalries.
 - Real countdown timers or kickoff locking.
 
-Important caveat: `proxy.ts` is present, but this project does not currently have a `middleware.ts` file. Unless Next.js is explicitly configured to run `proxy.ts`, do not assume its route protection or logged-in redirects are active. The `/home` route protects itself by calling `supabase.auth.getUser()` and redirecting unauthenticated users.
+Important auth note: `proxy.ts` is active in the current Next.js 16 canary build and handles Supabase session refresh plus route redirects. The `/home` route also protects itself by calling `supabase.auth.getUser()` and redirecting unauthenticated users.
 
 ## Tech Stack
 
@@ -354,7 +354,7 @@ Do not let client code be the authority for points or power-up consumption.
 
 - Decide how `auth.users.id` maps to `public.users.id`.
 - Add profile creation after registration or first login.
-- Wire `proxy.ts` correctly, or replace it with the Next.js 16-supported middleware/proxy convention for this project.
+- Keep `proxy.ts` aligned with the active Next.js 16 middleware/proxy convention.
 - Add group creation and invite-code joining.
 - Add match ingestion or admin tooling for fixtures/results.
 - Add prediction CRUD with kickoff locking.

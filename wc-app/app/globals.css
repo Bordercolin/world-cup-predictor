@@ -1,15 +1,83 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f5f1e8;
-  --foreground: #152016;
+  --prono-canvas: #f5f1e8;
+  --prono-surface: #fff8ec;
+  --prono-cream: #f8f0df;
+  --prono-muted-surface: #e3dbc8;
+  --prono-ink: #152016;
+  --prono-muted: #405143;
+  --prono-green: #165d4a;
+  --prono-terracotta: #d24a2a;
+  --prono-navy: #1d345e;
+  --prono-sage: #cdddbb;
+  --prono-sand: #e8d8bb;
+  --prono-mint: #dfe7d6;
+  --prono-mint-soft: #dfe8d3;
+  --prono-warning: #ffe0c8;
+  --prono-warning-ink: #9f321b;
+  --prono-danger-ink: #8f2f1c;
+  --prono-ocean-ink: #263b62;
+  --prono-pitch: #163427;
+
+  --background: var(--prono-canvas);
+  --foreground: var(--prono-ink);
+  --prono-radius-shell: 2rem;
+  --prono-radius-panel: 1.5rem;
+  --prono-radius-tile: 1.35rem;
+  --prono-radius-pill: 999px;
+  --prono-space-page-x: 1.25rem;
+  --prono-space-page-y: 1.5rem;
+  --prono-tracking-eyebrow: 0.22em;
+  --prono-tracking-label: 0.18em;
+  --prono-tracking-data: 0.14em;
+  --prono-tracking-display: -0.045em;
+  --prono-tracking-hero: -0.06em;
+  --prono-tracking-number: -0.08em;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-canvas: var(--prono-canvas);
+  --color-surface: var(--prono-surface);
+  --color-cream: var(--prono-cream);
+  --color-muted-surface: var(--prono-muted-surface);
+  --color-ink: var(--prono-ink);
+  --color-muted: var(--prono-muted);
+  --color-green: var(--prono-green);
+  --color-terracotta: var(--prono-terracotta);
+  --color-navy: var(--prono-navy);
+  --color-sage: var(--prono-sage);
+  --color-sand: var(--prono-sand);
+  --color-mint: var(--prono-mint);
+  --color-mint-soft: var(--prono-mint-soft);
+  --color-warning: var(--prono-warning);
+  --color-warning-ink: var(--prono-warning-ink);
+  --color-danger-ink: var(--prono-danger-ink);
+  --color-ocean-ink: var(--prono-ocean-ink);
+  --color-pitch: var(--prono-pitch);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --radius-shell: var(--prono-radius-shell);
+  --radius-panel: var(--prono-radius-panel);
+  --radius-tile: var(--prono-radius-tile);
+  --radius-pill: var(--prono-radius-pill);
+  --spacing-page-x: var(--prono-space-page-x);
+  --spacing-page-y: var(--prono-space-page-y);
+  --tracking-eyebrow: var(--prono-tracking-eyebrow);
+  --tracking-label: var(--prono-tracking-label);
+  --tracking-data: var(--prono-tracking-data);
+  --tracking-display: var(--prono-tracking-display);
+  --tracking-hero: var(--prono-tracking-hero);
+  --tracking-number: var(--prono-tracking-number);
+  --shadow-nav: 0 24px 80px -48px rgba(21, 32, 22, 0.55);
+  --shadow-panel: 0 30px 90px -60px rgba(21, 32, 22, 0.8);
+  --shadow-dashboard: 0 24px 80px -58px rgba(21, 32, 22, 0.7);
+  --shadow-stat: 0 18px 48px -42px rgba(21, 32, 22, 0.75);
+  --shadow-feature: 0 30px 90px -60px rgba(21, 32, 22, 0.95);
+  --shadow-button-dark: 0 18px 46px -24px rgba(21, 32, 22, 0.8);
+  --shadow-button-accent: 0 12px 30px -18px rgba(210, 74, 42, 0.9);
 }
 
 body {
@@ -35,8 +103,8 @@ body::before {
 }
 
 ::selection {
-  background: #d24a2a;
-  color: #fff8ec;
+  background: var(--prono-terracotta);
+  color: var(--prono-surface);
 }
 
 html {
@@ -45,7 +113,7 @@ html {
 
 a:focus-visible,
 button:focus-visible {
-  outline: 3px solid #1d345e;
+  outline: 3px solid var(--prono-navy);
   outline-offset: 4px;
 }
 
@@ -66,8 +134,8 @@ p {
   z-index: 60;
   transform: translateY(-200%);
   border-radius: 999px;
-  background: #152016;
-  color: #fff8ec;
+  background: var(--prono-ink);
+  color: var(--prono-surface);
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
   font-weight: 800;
@@ -85,5 +153,120 @@ p {
 
   to {
     transform: translateX(-50%);
+  }
+}
+
+@layer components {
+  .app-page {
+    min-height: 100dvh;
+    background: var(--prono-canvas);
+    color: var(--prono-ink);
+  }
+
+  .app-page-pad {
+    padding: var(--prono-space-page-y) var(--prono-space-page-x);
+  }
+
+  .eyebrow {
+    font-family: var(--font-geist-mono), monospace;
+    font-size: 0.75rem;
+    font-weight: 900;
+    letter-spacing: var(--prono-tracking-eyebrow);
+    text-transform: uppercase;
+  }
+
+  .eyebrow-xs {
+    font-family: var(--font-geist-mono), monospace;
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: var(--prono-tracking-eyebrow);
+    text-transform: uppercase;
+  }
+
+  .ui-label {
+    font-family: var(--font-geist-mono), monospace;
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: var(--prono-tracking-label);
+    text-transform: uppercase;
+  }
+
+  .display-heading {
+    font-weight: 900;
+    letter-spacing: var(--prono-tracking-display);
+    line-height: 1;
+    text-wrap: balance;
+  }
+
+  .hero-heading {
+    font-weight: 900;
+    letter-spacing: var(--prono-tracking-hero);
+    line-height: 1;
+    text-wrap: balance;
+  }
+
+  .surface-card {
+    border: 1px solid color-mix(in srgb, var(--prono-ink) 10%, transparent);
+    border-radius: var(--prono-radius-panel);
+    background: var(--prono-surface);
+    box-shadow: var(--shadow-stat);
+  }
+
+  .surface-panel {
+    border: 1px solid color-mix(in srgb, var(--prono-ink) 12%, transparent);
+    border-radius: var(--prono-radius-shell);
+    background: var(--prono-surface);
+  }
+
+  .btn-primary {
+    border-radius: var(--prono-radius-pill);
+    background: var(--prono-ink);
+    color: var(--prono-surface);
+    font-size: 0.875rem;
+    font-weight: 900;
+    transition: transform 180ms ease-out;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-0.125rem);
+  }
+
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  .form-field {
+    width: 100%;
+    border: 1px solid color-mix(in srgb, var(--prono-ink) 15%, transparent);
+    border-radius: 1rem;
+    background: var(--prono-canvas);
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 180ms ease-out;
+  }
+
+  .form-field:focus {
+    border-color: var(--prono-navy);
+  }
+
+  .hero-gradient {
+    background:
+      radial-gradient(circle at 14% 18%, color-mix(in srgb, var(--prono-terracotta) 24%, transparent), transparent 26%),
+      radial-gradient(circle at 88% 10%, color-mix(in srgb, var(--prono-navy) 20%, transparent), transparent 24%),
+      radial-gradient(circle at 78% 78%, color-mix(in srgb, var(--prono-green) 18%, transparent), transparent 26%),
+      linear-gradient(135deg, var(--prono-canvas) 0%, #efe4d1 52%, var(--prono-mint-soft) 100%);
+  }
+}
+
+@media (min-width: 640px) {
+  :root {
+    --prono-space-page-x: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --prono-space-page-x: 2.5rem;
   }
 }

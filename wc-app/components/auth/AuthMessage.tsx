@@ -12,8 +12,8 @@ export function AuthMessage({ error, message }: AuthMessageProps) {
     <div
       className={`rounded-2xl px-4 py-3 text-sm font-semibold ${
         error
-          ? "border border-[#d24a2a]/25 bg-[#d24a2a]/10 text-[#8f2f1c]"
-          : "border border-[#165d4a]/20 bg-[#165d4a]/10 text-[#165d4a]"
+          ? "border border-terracotta/25 bg-terracotta/10 text-danger-ink"
+          : "border border-green/20 bg-green/10 text-green"
       }`}
     >
       {error ?? message}

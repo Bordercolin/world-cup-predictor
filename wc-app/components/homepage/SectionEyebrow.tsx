@@ -7,10 +7,10 @@ type SectionEyebrowProps = {
 };
 
 const toneStyles = {
-  green: "text-[#165d4a]",
-  terracotta: "text-[#d24a2a]",
-  cream: "text-[#cdddbb]",
-  navy: "text-[#1d345e]",
+  green: "text-green",
+  terracotta: "text-terracotta",
+  cream: "text-sage",
+  navy: "text-navy",
 };
 
 export function SectionEyebrow({
@@ -21,7 +21,7 @@ export function SectionEyebrow({
   return (
     <p
       className={`font-mono font-black uppercase ${
-        size === "xs" ? "text-xs tracking-[0.22em]" : "text-sm tracking-[0.24em]"
+        size === "xs" ? "text-xs tracking-eyebrow" : "text-sm tracking-eyebrow"
       } ${toneStyles[tone]}`}
     >
       {children}

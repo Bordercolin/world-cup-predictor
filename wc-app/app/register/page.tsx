@@ -22,12 +22,12 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
         <AuthMessage error={params.error} />
 
         <div className="space-y-2">
-          <label className="text-sm font-bold text-[#152016]" htmlFor="displayName">
+          <label className="text-sm font-bold text-ink" htmlFor="displayName">
             Display name
           </label>
           <input
             autoComplete="name"
-            className="w-full rounded-2xl border border-[#152016]/15 bg-[#f5f1e8] px-4 py-3 text-base outline-none transition-colors focus:border-[#1d345e]"
+            className="form-field"
             id="displayName"
             name="displayName"
             placeholder="Mara De Wit"
@@ -37,12 +37,12 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-bold text-[#152016]" htmlFor="email">
+          <label className="text-sm font-bold text-ink" htmlFor="email">
             Email
           </label>
           <input
             autoComplete="email"
-            className="w-full rounded-2xl border border-[#152016]/15 bg-[#f5f1e8] px-4 py-3 text-base outline-none transition-colors focus:border-[#1d345e]"
+            className="form-field"
             id="email"
             name="email"
             placeholder="you@example.com"
@@ -52,12 +52,12 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-bold text-[#152016]" htmlFor="password">
+          <label className="text-sm font-bold text-ink" htmlFor="password">
             Password
           </label>
           <input
             autoComplete="new-password"
-            className="w-full rounded-2xl border border-[#152016]/15 bg-[#f5f1e8] px-4 py-3 text-base outline-none transition-colors focus:border-[#1d345e]"
+            className="form-field"
             id="password"
             minLength={8}
             name="password"
@@ -68,15 +68,15 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
         </div>
 
         <button
-          className="w-full rounded-full bg-[#d24a2a] px-7 py-4 text-center text-sm font-bold text-[#fff8ec] transition-transform hover:-translate-y-0.5 active:translate-y-0"
+          className="w-full rounded-full bg-terracotta px-7 py-4 text-center text-sm font-bold text-surface transition-transform hover:-translate-y-0.5 active:translate-y-0"
           type="submit"
         >
           Create account
         </button>
 
-        <p className="text-center text-sm text-[#405143]">
+        <p className="text-center text-sm text-muted">
           Already have an account?{" "}
-          <Link className="font-bold text-[#152016] underline-offset-4 hover:underline" href="/login">
+          <Link className="font-bold text-ink underline-offset-4 hover:underline" href="/login">
             Sign in
           </Link>
         </p>

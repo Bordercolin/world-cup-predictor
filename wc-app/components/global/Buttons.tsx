@@ -15,11 +15,10 @@ type ButtonActionProps = {
 };
 
 const variantStyles = {
-  dark: "bg-[#152016] text-[#fff8ec] shadow-[0_18px_46px_-24px_rgba(21,32,22,0.8)]",
-  light: "bg-[#fff8ec] text-[#152016]",
-  outline: "border border-[#152016]/20 bg-[#fff8ec]/60 text-[#152016] hover:bg-[#fff8ec]",
-  terracotta:
-    "bg-[#d24a2a] text-[#fff8ec] shadow-[0_12px_30px_-18px_rgba(210,74,42,0.9)]",
+  dark: "bg-ink text-surface shadow-button-dark",
+  light: "bg-surface text-ink",
+  outline: "border border-ink/20 bg-surface/60 text-ink hover:bg-surface",
+  terracotta: "bg-terracotta text-surface shadow-button-accent",
 };
 
 const sizeStyles = {
