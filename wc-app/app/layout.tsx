@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
 });
 
@@ -13,21 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Prono Club | World Cup Predictor",
-  description:
-    "Create a private World Cup prediction group, forecast match scores, and compete with friends on a live leaderboard.",
-  openGraph: {
-    title: "Prono Club | World Cup Predictor",
-    description:
-      "Create a private World Cup prediction group, forecast match scores, and compete with friends on a live leaderboard.",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Prono Club | World Cup Predictor",
-    description:
-      "Create a private World Cup prediction group, forecast match scores, and compete with friends on a live leaderboard.",
-  },
+  title: "World Cup 2026 Matches",
+  description: "Daily match overview for the 2026 World Cup.",
 };
 
 export default function RootLayout({
@@ -38,14 +25,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${spaceGrotesk.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <a className="skip-link" href="#main-content">
-          Skip to content
-        </a>
-        {children}
-      </body>
+      <body className={`${spaceGrotesk.className} min-h-full flex flex-col`}>{children}</body>
     </html>
   );
 }

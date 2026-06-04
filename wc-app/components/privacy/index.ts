@@ -1,1 +1,0 @@
-export { PrivacyPageContent } from "./PrivacyPageContent";

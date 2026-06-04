@@ -1,7 +1,23 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const protectedRoutes = ["/home"];
+function redirectPreservingSession(
+  request: NextRequest,
+  supabaseResponse: NextResponse,
+  pathname: string,
+) {
+  const url = request.nextUrl.clone();
+  url.pathname = pathname;
+  url.search = "";
+
+  const response = NextResponse.redirect(url);
+
+  supabaseResponse.cookies.getAll().forEach(({ name, value, ...options }) => {
+    response.cookies.set(name, value, options);
+  });
+
+  return response;
+}
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -36,21 +52,58 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route),
-  );
+  const pathname = request.nextUrl.pathname;
+  const isAuthPath = pathname.startsWith("/auth");
+  const isLoginPath = pathname.startsWith("/login");
+  const isRegisterPath = pathname.startsWith("/register");
+  const isNicknamePath = pathname.startsWith("/onboarding/nickname");
+  const isGroupPath = pathname.startsWith("/onboarding/group");
 
-  if (!user && isProtectedRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", request.nextUrl.pathname);
-    return NextResponse.redirect(url);
+  if (!user) {
+    if (isLoginPath || isRegisterPath || isAuthPath) {
+      return supabaseResponse;
+    }
+
+    return redirectPreservingSession(request, supabaseResponse, "/login");
   }
 
-  if (user && ["/login", "/register"].includes(request.nextUrl.pathname)) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/home";
-    return NextResponse.redirect(url);
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!profile) {
+    if (isNicknamePath || isAuthPath) {
+      return supabaseResponse;
+    }
+
+    return redirectPreservingSession(request, supabaseResponse, "/onboarding/nickname");
+  }
+
+  const { data: membership } = await supabase
+    .from("prediction_group_members")
+    .select("group_id")
+    .eq("user_id", user.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (!membership) {
+    if (isGroupPath || isAuthPath) {
+      return supabaseResponse;
+    }
+
+    return redirectPreservingSession(request, supabaseResponse, "/onboarding/group");
+  }
+
+  const isShowingCreatedGroupCode =
+    isGroupPath && request.nextUrl.searchParams.has("created");
+
+  if (
+    (isLoginPath || isRegisterPath || isNicknamePath || isGroupPath) &&
+    !isShowingCreatedGroupCode
+  ) {
+    return redirectPreservingSession(request, supabaseResponse, "/");
   }
 
   return supabaseResponse;

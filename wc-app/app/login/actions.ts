@@ -1,35 +1,34 @@
 "use server";
 
 import { redirect } from "next/navigation";
+
 import { createClient } from "@/utils/supabase/server";
 
-function readFormValue(formData: FormData, key: string) {
-  const value = formData.get(key);
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function safeNextPath(value: string) {
-  return value.startsWith("/") && !value.startsWith("//") ? value : "/home";
-}
-
-export async function login(formData: FormData) {
-  const email = readFormValue(formData, "email");
-  const password = readFormValue(formData, "password");
-  const next = safeNextPath(readFormValue(formData, "next"));
+export async function signInWithPassword(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+  const supabase = await createClient();
 
   if (!email || !password) {
-    redirect("/login?error=Enter%20your%20email%20and%20password");
+    redirect("/login?error=missing");
   }
 
-  const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
   if (error) {
-    redirect(`/login?error=${encodeURIComponent(error.message)}`);
+    redirect("/login?error=credentials");
   }
 
-  redirect(next);
+  redirect("/onboarding/nickname");
+}
+
+export async function signOut() {
+  const supabase = await createClient();
+
+  await supabase.auth.signOut();
+
+  redirect("/login");
 }

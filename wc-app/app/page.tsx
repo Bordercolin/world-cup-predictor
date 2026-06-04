@@ -1,103 +1,216 @@
-import {
-  FinalCta,
-  HeroSection,
-  HowItWorksSection,
-  LeaderboardSection,
-  MatchScheduleSection,
-  TickerStrip,
-} from "@/components/homepage";
-import { Footer } from "@/components/global";
+import { MatchOverview, type LeaderboardEntry, type Match } from "@/components/homepage";
+import { AppShell } from "@/components/navigation/AppShell";
+import { createClient } from "@/utils/supabase/server";
 
-const matches = [
-  {
-    date: "13 Jun",
-    time: "18:00",
-    fixture: "Brazil vs Morocco",
-    stage: "Group Stage",
-    matchday: "Matchday 1",
-    group: "Group C",
-    venue: "NY/NJ",
-    status: "Open",
-  },
-  {
-    date: "16 Jun",
-    time: "15:00",
-    fixture: "France vs Senegal",
-    stage: "Group Stage",
-    matchday: "Matchday 1",
-    group: "Group D",
-    venue: "Los Angeles",
-    status: "Open",
-  },
-  {
-    date: "22 Jun",
-    time: "20:00",
-    fixture: "Norway vs Senegal",
-    stage: "Group Stage",
-    matchday: "Matchday 2",
-    group: "Group D",
-    venue: "Seattle",
-    status: "Soon",
-  },
-  {
-    date: "25 Jun",
-    time: "16:00",
-    fixture: "Ecuador vs Germany",
-    stage: "Group Stage",
-    matchday: "Matchday 3",
-    group: "Group E",
-    venue: "Dallas",
-    status: "Locked",
-  },
-];
+type MatchRow = {
+  id: number;
+  match_number: number;
+  round: string;
+  group_name: string | null;
+  home_team_id: number | null;
+  home_team: string | null;
+  home_team_code: string | null;
+  away_team_id: number | null;
+  away_team: string | null;
+  away_team_code: string | null;
+  stadium: string;
+  stadium_city: string;
+  stadium_country: string;
+  kickoff_utc: string;
+  status: "scheduled" | "live" | "completed";
+};
 
-const steps = [
-  {
-    kicker: "01",
-    title: "Create a private group",
-    text: "Start a league for friends, family, colleagues, or your football group chat.",
-  },
-  {
-    kicker: "02",
-    title: "Predict before kickoff",
-    text: "Enter exact scores while fixtures are open. Every match locks automatically at start time.",
-  },
-  {
-    kicker: "03",
-    title: "Climb the table",
-    text: "Correct calls earn points, close calls keep you alive, and the leaderboard updates all tournament.",
-  },
-];
+type LeaderboardRow = {
+  group_id: string;
+  group_name: string;
+  user_id: string;
+  nickname: string;
+  points: number;
+  predictions_submitted: number;
+  rank: number;
+  is_current_user: boolean;
+};
 
-const leaderboard = [
-  { rank: "01", name: "Mara De Wit", points: "47", form: "+9" },
-  { rank: "02", name: "Jonas Ribeiro", points: "43", form: "+6" },
-  { rank: "03", name: "Nina Hofstad", points: "39", form: "+7" },
-  { rank: "04", name: "Olivier Mensah", points: "34", form: "+3" },
-];
+type PredictionRow = {
+  match_id: number;
+  predicted_home_score: number;
+  predicted_away_score: number;
+  predicted_winner_team_id: number | null;
+  points_awarded: number | null;
+  scoring_reason: string | null;
+  scored_at: string | null;
+  submitted_at: string;
+};
 
-const hostCities = ["NY/NJ", "Miami", "Dallas", "Kansas City", "Seattle", "Los Angeles"];
+const fifaCodeToCountryCode: Record<string, string> = {
+  ALG: "DZ",
+  ARG: "AR",
+  AUS: "AU",
+  AUT: "AT",
+  BEL: "BE",
+  BIH: "BA",
+  BRA: "BR",
+  CAN: "CA",
+  CIV: "CI",
+  COD: "CD",
+  COL: "CO",
+  CPV: "CV",
+  CRO: "HR",
+  CUW: "CW",
+  CZE: "CZ",
+  ECU: "EC",
+  EGY: "EG",
+  ENG: "GB-ENG",
+  ESP: "ES",
+  FRA: "FR",
+  GER: "DE",
+  GHA: "GH",
+  HAI: "HT",
+  IRN: "IR",
+  IRQ: "IQ",
+  JOR: "JO",
+  JPN: "JP",
+  KOR: "KR",
+  KSA: "SA",
+  MAR: "MA",
+  MEX: "MX",
+  NED: "NL",
+  NOR: "NO",
+  NZL: "NZ",
+  PAN: "PA",
+  PAR: "PY",
+  POR: "PT",
+  QAT: "QA",
+  RSA: "ZA",
+  SCO: "GB-SCT",
+  SEN: "SN",
+  SUI: "CH",
+  SWE: "SE",
+  TUN: "TN",
+  TUR: "TR",
+  URU: "UY",
+  USA: "US",
+  UZB: "UZ",
+};
 
-const scoringRules = [
-  "5 pts for an exact score",
-  "3 pts for the right result",
-  "1 pt for goal difference",
-  "Bonus streaks during knockout rounds",
-];
+function formatDateLabel(kickoffUtc: string) {
+  return new Intl.DateTimeFormat("en", {
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  }).format(new Date(kickoffUtc));
+}
 
-export default function Home() {
+function formatKickoffTime(kickoffUtc: string) {
+  return new Intl.DateTimeFormat("en", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "UTC",
+    timeZoneName: "short",
+  }).format(new Date(kickoffUtc));
+}
+
+function mapStatus(status: MatchRow["status"]): Match["status"] {
+  if (status === "live") {
+    return "Live";
+  }
+
+  if (status === "completed") {
+    return "Final";
+  }
+
+  return "Upcoming";
+}
+
+function mapMatchRow(match: MatchRow, prediction?: PredictionRow): Match {
+  const kickoffDate = new Date(match.kickoff_utc);
+
+  return {
+    id: String(match.id),
+    matchDate: kickoffDate.toISOString().slice(0, 10),
+    dateLabel: formatDateLabel(match.kickoff_utc),
+    group: match.group_name ? `Group ${match.group_name}` : match.round.toUpperCase(),
+    round: match.round,
+    kickoffUtc: match.kickoff_utc,
+    kickoffTime: formatKickoffTime(match.kickoff_utc),
+    homeTeamId: match.home_team_id,
+    homeTeam: match.home_team,
+    homeCountryCode: match.home_team_code ? fifaCodeToCountryCode[match.home_team_code] ?? null : null,
+    awayTeamId: match.away_team_id,
+    awayTeam: match.away_team,
+    awayCountryCode: match.away_team_code ? fifaCodeToCountryCode[match.away_team_code] ?? null : null,
+    venue: match.stadium,
+    city: `${match.stadium_city}, ${match.stadium_country}`,
+    status: mapStatus(match.status),
+    prediction: prediction
+      ? {
+          homeScore: prediction.predicted_home_score,
+          awayScore: prediction.predicted_away_score,
+          predictedWinnerTeamId: prediction.predicted_winner_team_id,
+          pointsAwarded: prediction.points_awarded,
+          scoringReason: prediction.scoring_reason,
+          scoredAt: prediction.scored_at,
+          submittedAt: prediction.submitted_at,
+        }
+      : undefined,
+  };
+}
+
+function mapLeaderboardRow(entry: LeaderboardRow): LeaderboardEntry {
+  return {
+    groupId: entry.group_id,
+    groupName: entry.group_name,
+    userId: entry.user_id,
+    nickname: entry.nickname,
+    points: entry.points,
+    predictionsSubmitted: entry.predictions_submitted,
+    rank: entry.rank,
+    isCurrentUser: entry.is_current_user,
+  };
+}
+
+export default async function Home() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data, error } = await supabase
+    .from("matches")
+    .select(
+      "id, match_number, round, group_name, home_team_id, home_team, home_team_code, away_team_id, away_team, away_team_code, stadium, stadium_city, stadium_country, kickoff_utc, status",
+    )
+    .order("kickoff_utc", { ascending: true })
+    .order("match_number", { ascending: true })
+    .returns<MatchRow[]>();
+  const { data: leaderboardData } = await supabase
+    .rpc("get_current_group_leaderboard")
+    .returns<LeaderboardRow[]>();
+  const { data: predictionData } = user
+    ? await supabase
+        .from("predictions")
+        .select(
+          "match_id, predicted_home_score, predicted_away_score, predicted_winner_team_id, points_awarded, scoring_reason, scored_at, submitted_at",
+        )
+        .eq("user_id", user.id)
+        .returns<PredictionRow[]>()
+    : { data: [] };
+  const leaderboardRows = Array.isArray(leaderboardData) ? leaderboardData : [];
+  const predictionsByMatch = new Map(
+    (predictionData ?? []).map((prediction) => [prediction.match_id, prediction]),
+  );
+
   return (
-    <main
-      className="app-page overflow-hidden text-ink"
-      id="main-content"
-    >
-      <HeroSection hostCities={hostCities} leaderboard={leaderboard} />
-      <TickerStrip />
-      <HowItWorksSection steps={steps} />
-      <MatchScheduleSection matches={matches} />
-      <LeaderboardSection players={leaderboard} scoringRules={scoringRules} />
-      <FinalCta />
-      <Footer />
-    </main>
+    <AppShell>
+      <MatchOverview
+        initialMatches={
+          error
+            ? []
+            : (data ?? []).map((match) => mapMatchRow(match, predictionsByMatch.get(match.id)))
+        }
+        leaderboard={leaderboardRows.map(mapLeaderboardRow)}
+        loadError={error?.message}
+      />
+    </AppShell>
   );
 }
