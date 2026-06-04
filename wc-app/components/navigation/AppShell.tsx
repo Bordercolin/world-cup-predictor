@@ -13,6 +13,10 @@ const navItems = [
     href: "/leaderboard",
     label: "Leaderboard",
   },
+  {
+    href: "/rules",
+    label: "Rules",
+  },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
