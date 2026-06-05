@@ -14,15 +14,62 @@ export type SavePredictionResult =
       message: string;
     };
 
+export type SquadPlayer = {
+  id: string;
+  footballDataPlayerId: number;
+  name: string;
+  position: string | null;
+  dateOfBirth: string | null;
+  nationality: string | null;
+  shirtNumber: number | null;
+};
+
+export type SquadTeam = {
+  id: number | null;
+  name: string | null;
+  code: string | null;
+  flagUrl: string | null;
+  footballDataTeamId: number | null;
+  squadLastSyncedAt: string | null;
+};
+
+export type MatchSquads = {
+  matchId: number;
+  homeTeam: SquadTeam;
+  awayTeam: SquadTeam;
+  homePlayers: SquadPlayer[];
+  awayPlayers: SquadPlayer[];
+};
+
+export type MatchSquadsResult =
+  | {
+      status: "loaded";
+      squads: MatchSquads;
+    }
+  | {
+      status: "error";
+      message: string;
+    };
+
+type MatchSquadsRow = {
+  match_id: number;
+  home_team: SquadTeam;
+  away_team: SquadTeam;
+  home_players: SquadPlayer[];
+  away_players: SquadPlayer[];
+};
+
 export async function savePrediction({
   awayScore,
   homeScore,
   matchId,
+  predictedFirstGoalscorerPlayerId,
   predictedWinnerTeamId,
 }: {
   awayScore: number;
   homeScore: number;
   matchId: string;
+  predictedFirstGoalscorerPlayerId?: string;
   predictedWinnerTeamId?: number;
 }): Promise<SavePredictionResult> {
   const matchIdNumber = Number(matchId);
@@ -100,6 +147,27 @@ export async function savePrediction({
     };
   }
 
+  let normalizedFirstGoalscorerPlayerId: string | null = null;
+
+  if (predictedFirstGoalscorerPlayerId) {
+    const { data: firstGoalscorer, error: firstGoalscorerError } = await supabase
+      .from("team_players")
+      .select("id")
+      .eq("id", predictedFirstGoalscorerPlayerId)
+      .eq("is_active", true)
+      .in("team_id", validWinnerIds)
+      .single<{ id: string }>();
+
+    if (firstGoalscorerError || !firstGoalscorer) {
+      return {
+        status: "error",
+        message: "Choose a first goalscorer from one of the teams in this match.",
+      };
+    }
+
+    normalizedFirstGoalscorerPlayerId = firstGoalscorer.id;
+  }
+
   const submittedAt = new Date().toISOString();
   const { data, error } = await supabase
     .from("predictions")
@@ -110,6 +178,7 @@ export async function savePrediction({
         predicted_home_score: homeScore,
         predicted_away_score: awayScore,
         predicted_winner_team_id: isKnockoutMatch ? normalizedWinnerTeamId : null,
+        predicted_first_goalscorer_player_id: normalizedFirstGoalscorerPlayerId,
         submitted_at: submittedAt,
         points_awarded: null,
         scoring_reason: null,
@@ -132,5 +201,49 @@ export async function savePrediction({
   return {
     status: "saved",
     submittedAt: data.submitted_at,
+  };
+}
+
+export async function getMatchSquads(matchId: string): Promise<MatchSquadsResult> {
+  const matchIdNumber = Number(matchId);
+
+  if (!Number.isInteger(matchIdNumber)) {
+    return {
+      status: "error",
+      message: "Choose a valid match before comparing squads.",
+    };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data, error } = await supabase
+    .rpc("get_match_squads", {
+      input_match_id: matchIdNumber,
+    })
+    .single<MatchSquadsRow>();
+
+  if (error || !data) {
+    return {
+      status: "error",
+      message: "Could not load squads for this match.",
+    };
+  }
+
+  return {
+    status: "loaded",
+    squads: {
+      matchId: data.match_id,
+      homeTeam: data.home_team,
+      awayTeam: data.away_team,
+      homePlayers: data.home_players,
+      awayPlayers: data.away_players,
+    },
   };
 }

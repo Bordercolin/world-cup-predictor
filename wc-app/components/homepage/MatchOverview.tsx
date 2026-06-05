@@ -3,10 +3,24 @@
 import { useState } from "react";
 import ReactCountryFlag from "react-country-flag";
 
-import { savePrediction } from "@/app/actions";
+import {
+  getMatchSquads,
+  savePrediction,
+  type MatchSquads,
+  type SquadPlayer,
+  type SquadTeam,
+} from "@/app/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 type TeamSide = "homeScore" | "awayScore";
 
@@ -31,6 +45,8 @@ export type Match = {
     homeScore: number;
     awayScore: number;
     predictedWinnerTeamId?: number | null;
+    predictedFirstGoalscorerPlayerId?: string | null;
+    predictedFirstGoalscorerName?: string | null;
     pointsAwarded?: number | null;
     scoringReason?: string | null;
     scoredAt?: string | null;
@@ -51,6 +67,12 @@ export type LeaderboardEntry = {
 
 type SaveState = {
   status: "idle" | "saving" | "saved" | "error";
+  message?: string;
+};
+
+type SquadState = {
+  status: "idle" | "loading" | "loaded" | "error";
+  squads?: MatchSquads;
   message?: string;
 };
 
@@ -195,6 +217,76 @@ function TeamName({
   );
 }
 
+function GoalscorerColumn({
+  onSelectPlayer,
+  players,
+  selectedPlayerId,
+  team,
+}: {
+  onSelectPlayer: (player: SquadPlayer) => void;
+  players: SquadPlayer[];
+  selectedPlayerId?: string | null;
+  team: SquadTeam;
+}) {
+  const playersByPosition = players.reduce<Record<string, SquadPlayer[]>>((groups, player) => {
+    const position = player.position ?? "Squad";
+    groups[position] = [...(groups[position] ?? []), player];
+    return groups;
+  }, {});
+
+  return (
+    <section className="rounded-xl border border-primary/10 bg-background/70 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-mono text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
+            {team.code ?? "TBD"}
+          </p>
+          <h3 className="mt-1 text-2xl font-semibold tracking-tight">
+            {team.name ?? "To be decided"}
+          </h3>
+        </div>
+        <Badge variant="outline">{players.length} players</Badge>
+      </div>
+
+      <div className="mt-4 grid gap-4">
+        {players.length > 0 ? (
+          Object.entries(playersByPosition).map(([position, positionPlayers]) => (
+            <div className="grid gap-2" key={position}>
+              <p className="font-mono text-[0.7rem] font-bold uppercase tracking-[0.16em] text-primary">
+                {position}
+              </p>
+              <div className="grid gap-2">
+                {positionPlayers.map((player) => (
+                  <button
+                    aria-pressed={selectedPlayerId === player.id}
+                    className={`rounded-lg border px-3 py-2 text-left transition hover:border-primary/30 hover:bg-primary/10 ${
+                      selectedPlayerId === player.id
+                        ? "border-primary/40 bg-primary/15 text-primary"
+                        : "border-border/60 bg-muted/25"
+                    }`}
+                    key={player.id}
+                    onClick={() => onSelectPlayer(player)}
+                    type="button"
+                  >
+                    <p className="font-semibold leading-5">{player.name}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {[player.nationality, player.dateOfBirth].filter(Boolean).join(" - ")}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="rounded-lg border border-dashed border-border p-3 text-sm text-muted-foreground">
+            No squad data synced for this team yet.
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export function MatchOverview({
   initialMatches,
   leaderboard,
@@ -206,6 +298,7 @@ export function MatchOverview({
 }) {
   const [matches, setMatches] = useState(initialMatches);
   const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({});
+  const [squadStates, setSquadStates] = useState<Record<string, SquadState>>({});
   const currentPlayer = leaderboard.find((entry) => entry.isCurrentUser);
   const leader = leaderboard[0];
   const pointsBehindLeader =
@@ -286,6 +379,8 @@ export function MatchOverview({
             predictedWinnerTeamId: shouldKeepWinner
               ? currentPrediction.predictedWinnerTeamId
               : null,
+            predictedFirstGoalscorerPlayerId: currentPrediction.predictedFirstGoalscorerPlayerId,
+            predictedFirstGoalscorerName: currentPrediction.predictedFirstGoalscorerName,
             pointsAwarded: null,
             scoringReason: null,
             scoredAt: null,
@@ -330,6 +425,40 @@ export function MatchOverview({
     }));
   }
 
+  function updateFirstGoalscorer(matchId: string, player: SquadPlayer | null) {
+    setMatches((currentMatches) =>
+      currentMatches.map((match) => {
+        if (match.id !== matchId || isMatchLocked(match)) {
+          return match;
+        }
+
+        const currentPrediction = match.prediction ?? {
+          homeScore: 0,
+          awayScore: 0,
+        };
+
+        return {
+          ...match,
+          prediction: {
+            ...currentPrediction,
+            predictedFirstGoalscorerPlayerId: player?.id ?? null,
+            predictedFirstGoalscorerName: player?.name ?? null,
+            pointsAwarded: null,
+            scoringReason: null,
+            scoredAt: null,
+            submittedAt: undefined,
+          },
+        };
+      }),
+    );
+    setSaveStates((currentStates) => ({
+      ...currentStates,
+      [matchId]: {
+        status: "idle",
+      },
+    }));
+  }
+
   async function handleSavePrediction(match: Match) {
     if (!match.prediction) {
       return;
@@ -357,6 +486,8 @@ export function MatchOverview({
       matchId: match.id,
       homeScore: match.prediction.homeScore,
       awayScore: match.prediction.awayScore,
+      predictedFirstGoalscorerPlayerId:
+        match.prediction.predictedFirstGoalscorerPlayerId ?? undefined,
       predictedWinnerTeamId: match.prediction.predictedWinnerTeamId ?? undefined,
     });
 
@@ -393,6 +524,53 @@ export function MatchOverview({
       ...currentStates,
       [match.id]: {
         status: "saved",
+      },
+    }));
+  }
+
+  async function handleLoadSquads(match: Match) {
+    const existingState = squadStates[match.id];
+
+    if (existingState?.status === "loading" || existingState?.status === "loaded") {
+      return;
+    }
+
+    if (!match.homeTeamId || !match.awayTeamId) {
+      setSquadStates((currentStates) => ({
+        ...currentStates,
+        [match.id]: {
+          status: "error",
+          message: "Both teams need to be known before choosing a goalscorer.",
+        },
+      }));
+      return;
+    }
+
+    setSquadStates((currentStates) => ({
+      ...currentStates,
+      [match.id]: {
+        status: "loading",
+      },
+    }));
+
+    const result = await getMatchSquads(match.id);
+
+    if (result.status === "error") {
+      setSquadStates((currentStates) => ({
+        ...currentStates,
+        [match.id]: {
+          status: "error",
+          message: result.message,
+        },
+      }));
+      return;
+    }
+
+    setSquadStates((currentStates) => ({
+      ...currentStates,
+      [match.id]: {
+        status: "loaded",
+        squads: result.squads,
       },
     }));
   }
@@ -463,6 +641,8 @@ export function MatchOverview({
                   const requiresWinner = needsKnockoutWinner(match);
                   const hasWinner = Boolean(match.prediction?.predictedWinnerTeamId);
                   const scored = Boolean(match.prediction?.scoredAt);
+                  const canPredictGoalscorer = Boolean(match.homeTeamId && match.awayTeamId);
+                  const squadState = squadStates[match.id] ?? { status: "idle" };
                   const saveDisabled =
                     !match.prediction ||
                     locked ||
@@ -585,6 +765,100 @@ export function MatchOverview({
                             >
                               {getSaveButtonLabel(match, saveState)}
                             </Button>
+                            <Dialog>
+                              <DialogTrigger
+                                render={
+                                  <Button
+                                    aria-label={`Predict first goalscorer for ${match.homeTeam ?? "home team"} vs ${match.awayTeam ?? "away team"}`}
+                                    disabled={!canPredictGoalscorer || locked || scored}
+                                    onClick={() => void handleLoadSquads(match)}
+                                    size="sm"
+                                    type="button"
+                                    variant="outline"
+                                  />
+                                }
+                              >
+                                Predict goalscorer
+                              </DialogTrigger>
+                              <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-4xl">
+                                <DialogHeader>
+                                  <DialogTitle>Predict first goalscorer</DialogTitle>
+                                  <DialogDescription>
+                                    Pick the player you think will score first in{" "}
+                                    {match.homeTeam ?? "home team"} vs{" "}
+                                    {match.awayTeam ?? "away team"}. Correct pick is worth 5 bonus
+                                    points.
+                                  </DialogDescription>
+                                </DialogHeader>
+
+                                {squadState.status === "loading" ? (
+                                  <div className="rounded-xl border border-primary/10 bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+                                    Loading squads...
+                                  </div>
+                                ) : null}
+
+                                {squadState.status === "error" ? (
+                                  <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+                                    {squadState.message}
+                                  </div>
+                                ) : null}
+
+                                {squadState.status === "loaded" && squadState.squads ? (
+                                  <div className="grid gap-4">
+                                    <div className="flex flex-col gap-2 rounded-xl border border-primary/10 bg-primary/5 p-3 sm:flex-row sm:items-center sm:justify-between">
+                                      <p className="text-sm text-muted-foreground">
+                                        {match.prediction?.predictedFirstGoalscorerName
+                                          ? `Selected: ${match.prediction.predictedFirstGoalscorerName}`
+                                          : "No first goalscorer selected yet."}
+                                      </p>
+                                      <Button
+                                        disabled={!match.prediction?.predictedFirstGoalscorerPlayerId}
+                                        onClick={() => updateFirstGoalscorer(match.id, null)}
+                                        size="sm"
+                                        type="button"
+                                        variant="outline"
+                                      >
+                                        Clear pick
+                                      </Button>
+                                    </div>
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                      <GoalscorerColumn
+                                        onSelectPlayer={(player) =>
+                                          updateFirstGoalscorer(match.id, player)
+                                        }
+                                        players={squadState.squads.homePlayers}
+                                        selectedPlayerId={
+                                          match.prediction?.predictedFirstGoalscorerPlayerId
+                                        }
+                                        team={squadState.squads.homeTeam}
+                                      />
+                                      <GoalscorerColumn
+                                        onSelectPlayer={(player) =>
+                                          updateFirstGoalscorer(match.id, player)
+                                        }
+                                        players={squadState.squads.awayPlayers}
+                                        selectedPlayerId={
+                                          match.prediction?.predictedFirstGoalscorerPlayerId
+                                        }
+                                        team={squadState.squads.awayTeam}
+                                      />
+                                    </div>
+                                  </div>
+                                ) : null}
+                              </DialogContent>
+                            </Dialog>
+                            {match.prediction?.predictedFirstGoalscorerName ? (
+                              <p className="max-w-56 text-center text-xs text-muted-foreground">
+                                First goalscorer:{" "}
+                                <span className="font-semibold text-foreground">
+                                  {match.prediction.predictedFirstGoalscorerName}
+                                </span>
+                              </p>
+                            ) : match.prediction?.predictedFirstGoalscorerPlayerId ? (
+                              <p className="max-w-56 text-center text-xs text-muted-foreground">
+                                First goalscorer selected
+                              </p>
+                            ) : null}
                             {requiresWinner && !hasWinner && !locked ? (
                               <p className="max-w-52 text-center text-xs text-muted-foreground">
                                 Pick the team that advances if this score stays tied.

@@ -51,6 +51,15 @@ const knockoutRules = [
   },
 ];
 
+const bonusRules = [
+  {
+    points: "+5",
+    title: "First goalscorer bonus.",
+    text: "Pick the player who scores the first goal of the match. If you are right, you get five extra points on top of your score prediction.",
+    example: "If the match ends 0-0, there is no first goalscorer bonus.",
+  },
+];
+
 function RuleList({
   rules,
 }: {
@@ -101,7 +110,7 @@ export function RulesPage() {
             <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
               Group-stage predictions use the best matching score category. From the Round of 16,
               points are added together: submitting, winner, exact score, and goal difference can all
-              count.
+              count. The first goalscorer bonus is added on top when you pick the right player.
             </p>
           </CardContent>
         </Card>
@@ -129,6 +138,17 @@ export function RulesPage() {
             </CardContent>
           </Card>
         </div>
+
+        <Card className="border-primary/10 bg-card p-2 sm:p-4">
+          <CardHeader>
+            <CardTitle className="text-2xl font-semibold tracking-tight">
+              Bonus Prediction
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RuleList rules={bonusRules} />
+          </CardContent>
+        </Card>
       </div>
     </main>
   );

@@ -36,6 +36,7 @@ type PredictionRow = {
   predicted_home_score: number;
   predicted_away_score: number;
   predicted_winner_team_id: number | null;
+  predicted_first_goalscorer_player_id: string | null;
   points_awarded: number | null;
   scoring_reason: string | null;
   scored_at: string | null;
@@ -148,6 +149,7 @@ function mapMatchRow(match: MatchRow, prediction?: PredictionRow): Match {
           homeScore: prediction.predicted_home_score,
           awayScore: prediction.predicted_away_score,
           predictedWinnerTeamId: prediction.predicted_winner_team_id,
+          predictedFirstGoalscorerPlayerId: prediction.predicted_first_goalscorer_player_id,
           pointsAwarded: prediction.points_awarded,
           scoringReason: prediction.scoring_reason,
           scoredAt: prediction.scored_at,
@@ -190,7 +192,7 @@ export default async function Home() {
     ? await supabase
         .from("predictions")
         .select(
-          "match_id, predicted_home_score, predicted_away_score, predicted_winner_team_id, points_awarded, scoring_reason, scored_at, submitted_at",
+          "match_id, predicted_home_score, predicted_away_score, predicted_winner_team_id, predicted_first_goalscorer_player_id, points_awarded, scoring_reason, scored_at, submitted_at",
         )
         .eq("user_id", user.id)
         .returns<PredictionRow[]>()
