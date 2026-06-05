@@ -535,7 +535,6 @@ export function MatchOverview({
       return;
     }
     
-
     if (!match.homeTeamId || !match.awayTeamId) {
       setSquadStates((currentStates) => ({
         ...currentStates,
