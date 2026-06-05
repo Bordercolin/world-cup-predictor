@@ -534,6 +534,7 @@ export function MatchOverview({
     if (existingState?.status === "loading" || existingState?.status === "loaded") {
       return;
     }
+    
 
     if (!match.homeTeamId || !match.awayTeamId) {
       setSquadStates((currentStates) => ({
