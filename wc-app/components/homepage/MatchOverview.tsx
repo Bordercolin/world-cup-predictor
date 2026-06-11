@@ -844,7 +844,7 @@ export function MatchOverview({
                   World Cup 2026
                 </Badge>
                 <CardTitle className="text-4xl font-semibold tracking-tight sm:text-5xl">
-                  Your group form
+                  {currentPlayer?.groupName ?? "Your group"}
                 </CardTitle>
               </div>
               <Badge variant="outline" className="w-fit uppercase tracking-[0.18em]">
