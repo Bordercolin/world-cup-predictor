@@ -34,7 +34,7 @@ export function LeaderboardPage({ leaderboard }: { leaderboard: LeaderboardEntry
                 {leaderboard.map((entry) => (
                   <Link
                     aria-label={`View completed predictions for ${entry.nickname}`}
-                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl border px-4 py-3 transition hover:-translate-y-0.5 hover:bg-muted/45 ${
+                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl border px-4 py-3 ${
                       entry.isCurrentUser
                         ? "border-primary/20 bg-primary/10 bg-[image:var(--gradient-score)] ring-1 ring-primary/20"
                         : "bg-muted/25"

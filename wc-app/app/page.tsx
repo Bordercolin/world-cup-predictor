@@ -18,6 +18,13 @@ type MatchRow = {
   stadium_country: string;
   kickoff_utc: string;
   status: "scheduled" | "live" | "completed";
+  odds_home_win: number | null;
+  odds_draw: number | null;
+  odds_away_win: number | null;
+  odds_home_implied_probability: number | null;
+  odds_draw_implied_probability: number | null;
+  odds_away_implied_probability: number | null;
+  odds_last_synced_at: string | null;
 };
 
 type LeaderboardRow = {
@@ -41,6 +48,11 @@ type PredictionRow = {
   scoring_reason: string | null;
   scored_at: string | null;
   submitted_at: string;
+};
+
+type GoalscorerPlayerRow = {
+  id: string;
+  name: string;
 };
 
 const fifaCodeToCountryCode: Record<string, string> = {
@@ -107,8 +119,7 @@ function formatKickoffTime(kickoffUtc: string) {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-    timeZone: "UTC",
-    timeZoneName: "short",
+    timeZone: "Europe/Brussels",
   }).format(new Date(kickoffUtc));
 }
 
@@ -124,7 +135,11 @@ function mapStatus(status: MatchRow["status"]): Match["status"] {
   return "Upcoming";
 }
 
-function mapMatchRow(match: MatchRow, prediction?: PredictionRow): Match {
+function mapMatchRow(
+  match: MatchRow,
+  prediction?: PredictionRow,
+  goalscorerNamesById = new Map<string, string>(),
+): Match {
   const kickoffDate = new Date(match.kickoff_utc);
 
   return {
@@ -144,12 +159,32 @@ function mapMatchRow(match: MatchRow, prediction?: PredictionRow): Match {
     venue: match.stadium,
     city: `${match.stadium_city}, ${match.stadium_country}`,
     status: mapStatus(match.status),
+    odds:
+      match.odds_home_win &&
+      match.odds_draw &&
+      match.odds_away_win &&
+      match.odds_home_implied_probability &&
+      match.odds_draw_implied_probability &&
+      match.odds_away_implied_probability
+        ? {
+            homeWin: match.odds_home_win,
+            draw: match.odds_draw,
+            awayWin: match.odds_away_win,
+            homeImpliedProbability: match.odds_home_implied_probability,
+            drawImpliedProbability: match.odds_draw_implied_probability,
+            awayImpliedProbability: match.odds_away_implied_probability,
+            lastSyncedAt: match.odds_last_synced_at,
+          }
+        : undefined,
     prediction: prediction
       ? {
           homeScore: prediction.predicted_home_score,
           awayScore: prediction.predicted_away_score,
           predictedWinnerTeamId: prediction.predicted_winner_team_id,
           predictedFirstGoalscorerPlayerId: prediction.predicted_first_goalscorer_player_id,
+          predictedFirstGoalscorerName: prediction.predicted_first_goalscorer_player_id
+            ? goalscorerNamesById.get(prediction.predicted_first_goalscorer_player_id) ?? null
+            : null,
           pointsAwarded: prediction.points_awarded,
           scoringReason: prediction.scoring_reason,
           scoredAt: prediction.scored_at,
@@ -180,7 +215,7 @@ export default async function Home() {
   const { data, error } = await supabase
     .from("matches")
     .select(
-      "id, match_number, round, group_name, home_team_id, home_team, home_team_code, away_team_id, away_team, away_team_code, stadium, stadium_city, stadium_country, kickoff_utc, status",
+      "id, match_number, round, group_name, home_team_id, home_team, home_team_code, away_team_id, away_team, away_team_code, stadium, stadium_city, stadium_country, kickoff_utc, status, odds_home_win, odds_draw, odds_away_win, odds_home_implied_probability, odds_draw_implied_probability, odds_away_implied_probability, odds_last_synced_at",
     )
     .order("kickoff_utc", { ascending: true })
     .order("match_number", { ascending: true })
@@ -197,9 +232,27 @@ export default async function Home() {
         .eq("user_id", user.id)
         .returns<PredictionRow[]>()
     : { data: [] };
+  const goalscorerPlayerIds = Array.from(
+    new Set(
+      (predictionData ?? [])
+        .map((prediction) => prediction.predicted_first_goalscorer_player_id)
+        .filter((playerId): playerId is string => Boolean(playerId)),
+    ),
+  );
+  const { data: goalscorerPlayerData } =
+    goalscorerPlayerIds.length > 0
+      ? await supabase
+          .from("team_players")
+          .select("id, name")
+          .in("id", goalscorerPlayerIds)
+          .returns<GoalscorerPlayerRow[]>()
+      : { data: [] };
   const leaderboardRows = Array.isArray(leaderboardData) ? leaderboardData : [];
   const predictionsByMatch = new Map(
     (predictionData ?? []).map((prediction) => [prediction.match_id, prediction]),
+  );
+  const goalscorerNamesById = new Map(
+    (goalscorerPlayerData ?? []).map((player) => [player.id, player.name]),
   );
 
   return (
@@ -208,7 +261,9 @@ export default async function Home() {
         initialMatches={
           error
             ? []
-            : (data ?? []).map((match) => mapMatchRow(match, predictionsByMatch.get(match.id)))
+            : (data ?? []).map((match) =>
+                mapMatchRow(match, predictionsByMatch.get(match.id), goalscorerNamesById),
+              )
         }
         leaderboard={leaderboardRows.map(mapLeaderboardRow)}
         loadError={error?.message}

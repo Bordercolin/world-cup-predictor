@@ -17,6 +17,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -41,6 +42,15 @@ export type Match = {
   venue: string;
   city: string;
   status: "Upcoming" | "Live" | "Final";
+  odds?: {
+    homeWin: number;
+    draw: number;
+    awayWin: number;
+    homeImpliedProbability: number;
+    drawImpliedProbability: number;
+    awayImpliedProbability: number;
+    lastSyncedAt: string | null;
+  };
   prediction?: {
     homeScore: number;
     awayScore: number;
@@ -75,6 +85,20 @@ type SquadState = {
   squads?: MatchSquads;
   message?: string;
 };
+
+type GoalscorerDraft = {
+  playerId: string | null;
+  playerName: string | null;
+};
+
+function LoadingSpinner({ className = "size-3.5" }: { className?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`${className} inline-block animate-spin rounded-full border-2 border-current border-r-transparent`}
+    />
+  );
+}
 
 const statusDetails: Record<
   Match["status"],
@@ -135,6 +159,27 @@ function getSaveButtonLabel(match: Match, saveState?: SaveState) {
   }
 
   return "Save prediction";
+}
+
+function formatProbability(value: number) {
+  return new Intl.NumberFormat("en", {
+    maximumFractionDigits: 0,
+    style: "percent",
+  }).format(value);
+}
+
+function formatOddsSyncedAt(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat("en", {
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "short",
+    timeZone: "Europe/Brussels",
+  }).format(new Date(value));
 }
 
 function PredictionStepper({
@@ -213,6 +258,119 @@ function TeamName({
         </span>
       )}
       <p className="text-xl font-semibold tracking-tight">{displayName}</p>
+    </div>
+  );
+}
+
+function OddsPanel({ match }: { match: Match }) {
+  if (!match.odds) {
+    return null;
+  }
+
+  const updatedAt = formatOddsSyncedAt(match.odds.lastSyncedAt);
+  const odds = [
+    {
+      label: match.homeTeam ?? "Home",
+      shortLabel: match.homeTeam ?? "Home",
+      probability: match.odds.homeImpliedProbability,
+      segmentClass: "bg-primary",
+      dotClass: "bg-primary",
+      alignClass: "justify-self-start text-left",
+    },
+    {
+      label: "Draw",
+      shortLabel: "Draw",
+      probability: match.odds.drawImpliedProbability,
+      segmentClass: "bg-muted-foreground/70",
+      dotClass: "bg-muted-foreground/70",
+      alignClass: "justify-self-center text-center",
+    },
+    {
+      label: match.awayTeam ?? "Away",
+      shortLabel: match.awayTeam ?? "Away",
+      probability: match.odds.awayImpliedProbability,
+      segmentClass: "bg-secondary-foreground/70",
+      dotClass: "bg-secondary-foreground/70",
+      alignClass: "justify-self-end text-right",
+    },
+  ];
+
+  return (
+    <div className="rounded-xl border border-primary/10 bg-muted/25 p-3">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <p className="font-mono text-[0.7rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+          Match odds
+        </p>
+        {updatedAt ? (
+          <p className="text-xs text-muted-foreground">Updated {updatedAt}</p>
+        ) : null}
+      </div>
+      <div
+        aria-label={`Win chances: ${odds
+          .map((entry) => `${entry.label} ${formatProbability(entry.probability)}`)
+          .join(", ")}`}
+        className="mt-3 flex h-2 overflow-hidden rounded-full bg-background"
+        role="img"
+      >
+        {odds.map((entry) => (
+          <span
+            aria-hidden="true"
+            className={entry.segmentClass}
+            key={entry.label}
+            style={{ width: `${entry.probability * 100}%` }}
+          />
+        ))}
+      </div>
+      <div className="mt-2 grid grid-cols-3 gap-2">
+        {odds.map((entry) => (
+          <div className={`min-w-0 ${entry.alignClass}`} key={entry.label}>
+            <div className="inline-grid gap-1 text-xs">
+              <div className="flex max-w-32 items-center gap-1.5">
+                <span aria-hidden="true" className={`size-2 rounded-full ${entry.dotClass}`} />
+                <p className="truncate font-semibold text-muted-foreground">{entry.shortLabel}</p>
+              </div>
+              <p className="font-mono font-semibold tabular-nums text-foreground">
+                {formatProbability(entry.probability)}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GoalscorerSkeleton() {
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      {["Home squad", "Away squad"].map((label) => (
+        <section
+          className="rounded-xl border border-primary/10 bg-background/70 p-4"
+          key={label}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="grid gap-2">
+              <div className="h-3 w-16 animate-pulse rounded-full bg-muted" />
+              <div className="h-6 w-32 animate-pulse rounded-full bg-muted" />
+            </div>
+            <div className="h-6 w-20 animate-pulse rounded-full bg-muted" />
+          </div>
+          <div className="mt-5 grid gap-3">
+            <p className="font-mono text-[0.7rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+              {label}
+            </p>
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div
+                className="rounded-lg border border-border/60 bg-muted/25 px-3 py-2"
+                key={index}
+              >
+                <div className="h-4 w-3/4 animate-pulse rounded-full bg-muted" />
+                <div className="mt-2 h-3 w-1/2 animate-pulse rounded-full bg-muted" />
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
@@ -299,6 +457,8 @@ export function MatchOverview({
   const [matches, setMatches] = useState(initialMatches);
   const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({});
   const [squadStates, setSquadStates] = useState<Record<string, SquadState>>({});
+  const [goalscorerDialogMatchId, setGoalscorerDialogMatchId] = useState<string | null>(null);
+  const [goalscorerDrafts, setGoalscorerDrafts] = useState<Record<string, GoalscorerDraft>>({});
   const currentPlayer = leaderboard.find((entry) => entry.isCurrentUser);
   const leader = leaderboard[0];
   const pointsBehindLeader =
@@ -425,7 +585,10 @@ export function MatchOverview({
     }));
   }
 
-  function updateFirstGoalscorer(matchId: string, player: SquadPlayer | null) {
+  function updateFirstGoalscorer(
+    matchId: string,
+    player: Pick<SquadPlayer, "id" | "name"> | null,
+  ) {
     setMatches((currentMatches) =>
       currentMatches.map((match) => {
         if (match.id !== matchId || isMatchLocked(match)) {
@@ -457,6 +620,101 @@ export function MatchOverview({
         status: "idle",
       },
     }));
+  }
+
+  function getSavedGoalscorerDraft(match: Match): GoalscorerDraft {
+    return {
+      playerId: match.prediction?.predictedFirstGoalscorerPlayerId ?? null,
+      playerName: match.prediction?.predictedFirstGoalscorerName ?? null,
+    };
+  }
+
+  function getGoalscorerDraft(match: Match) {
+    return goalscorerDrafts[match.id] ?? getSavedGoalscorerDraft(match);
+  }
+
+  function hasGoalscorerDraftChanged(match: Match) {
+    const draft = getGoalscorerDraft(match);
+    const saved = getSavedGoalscorerDraft(match);
+
+    return draft.playerId !== saved.playerId;
+  }
+
+  function prepareGoalscorerDialog(match: Match) {
+    setGoalscorerDrafts((currentDrafts) => ({
+      ...currentDrafts,
+      [match.id]: getSavedGoalscorerDraft(match),
+    }));
+    setGoalscorerDialogMatchId(match.id);
+    void handleLoadSquads(match);
+  }
+
+  function updateGoalscorerDraft(matchId: string, player: SquadPlayer | null) {
+    setGoalscorerDrafts((currentDrafts) => ({
+      ...currentDrafts,
+      [matchId]: {
+        playerId: player?.id ?? null,
+        playerName: player?.name ?? null,
+      },
+    }));
+  }
+
+  function resetGoalscorerDraft(match: Match) {
+    setGoalscorerDrafts((currentDrafts) => ({
+      ...currentDrafts,
+      [match.id]: getSavedGoalscorerDraft(match),
+    }));
+  }
+
+  function getGoalscorerCloseConfirmationMessage(match: Match) {
+    const draft = getGoalscorerDraft(match);
+    const saved = getSavedGoalscorerDraft(match);
+
+    if (draft.playerId !== saved.playerId) {
+      return "You have not saved this goalscorer change yet. Close and discard it?";
+    }
+
+    if (!saved.playerId && !draft.playerId) {
+      return "You have not chosen a first goalscorer yet. Are you sure you want to close?";
+    }
+
+    return null;
+  }
+
+  function handleGoalscorerDialogOpenChange(
+    match: Match,
+    open: boolean,
+    eventDetails: { cancel: () => void },
+  ) {
+    if (open) {
+      prepareGoalscorerDialog(match);
+      return;
+    }
+
+    const confirmationMessage = getGoalscorerCloseConfirmationMessage(match);
+
+    if (confirmationMessage && !window.confirm(confirmationMessage)) {
+      eventDetails.cancel();
+      return;
+    }
+
+    resetGoalscorerDraft(match);
+    setGoalscorerDialogMatchId(null);
+  }
+
+  function saveGoalscorerDraft(match: Match) {
+    const draft = getGoalscorerDraft(match);
+
+    updateFirstGoalscorer(
+      match.id,
+      draft.playerId
+        ? {
+            id: draft.playerId,
+            name: draft.playerName ?? "Selected player",
+          }
+        : null,
+    );
+    setGoalscorerDialogMatchId(null);
   }
 
   async function handleSavePrediction(match: Match) {
@@ -598,7 +856,7 @@ export function MatchOverview({
             <div className="grid gap-3 sm:grid-cols-3">
               {userStats.map((stat) => (
                 <div
-                  className="rounded-xl border border-primary/10 bg-accent/35 bg-[image:linear-gradient(135deg,oklch(0.36_0.065_230/0.34),transparent)] p-4 transition hover:-translate-y-0.5 hover:bg-accent/55"
+                  className="rounded-xl border border-primary/10 bg-accent/35 bg-[image:linear-gradient(135deg,oklch(0.36_0.065_230/0.34),transparent)] p-4"
                   key={stat.label}
                 >
                   <p className="font-mono text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
@@ -643,6 +901,8 @@ export function MatchOverview({
                   const scored = Boolean(match.prediction?.scoredAt);
                   const canPredictGoalscorer = Boolean(match.homeTeamId && match.awayTeamId);
                   const squadState = squadStates[match.id] ?? { status: "idle" };
+                  const goalscorerDraft = getGoalscorerDraft(match);
+                  const goalscorerDraftChanged = hasGoalscorerDraftChanged(match);
                   const saveDisabled =
                     !match.prediction ||
                     locked ||
@@ -655,7 +915,7 @@ export function MatchOverview({
                   return (
                   <Card
                     key={match.id}
-                    className="border-primary/10 bg-card transition hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-md"
+                    className="border-primary/10 bg-card"
                   >
                     <CardContent>
                       <div className="grid gap-4 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
@@ -758,27 +1018,35 @@ export function MatchOverview({
                           <div className="grid justify-items-center gap-2">
                             <Button
                               aria-label={`Save prediction for ${match.homeTeam ?? "home team"} vs ${match.awayTeam ?? "away team"}`}
+                              aria-busy={saveState?.status === "saving"}
                               disabled={saveDisabled}
                               onClick={() => void handleSavePrediction(match)}
                               size="sm"
                               type="button"
                             >
+                              {saveState?.status === "saving" ? <LoadingSpinner /> : null}
                               {getSaveButtonLabel(match, saveState)}
                             </Button>
-                            <Dialog>
+                            <Dialog
+                              onOpenChange={(open, eventDetails) =>
+                                handleGoalscorerDialogOpenChange(match, open, eventDetails)
+                              }
+                              open={goalscorerDialogMatchId === match.id}
+                            >
                               <DialogTrigger
                                 render={
                                   <Button
                                     aria-label={`Predict first goalscorer for ${match.homeTeam ?? "home team"} vs ${match.awayTeam ?? "away team"}`}
+                                    aria-busy={squadState.status === "loading"}
                                     disabled={!canPredictGoalscorer || locked || scored}
-                                    onClick={() => void handleLoadSquads(match)}
                                     size="sm"
                                     type="button"
                                     variant="outline"
                                   />
                                 }
                               >
-                                Predict goalscorer
+                                {squadState.status === "loading" ? <LoadingSpinner /> : null}
+                                {squadState.status === "loading" ? "Loading players..." : "Predict goalscorer"}
                               </DialogTrigger>
                               <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-4xl">
                                 <DialogHeader>
@@ -792,8 +1060,12 @@ export function MatchOverview({
                                 </DialogHeader>
 
                                 {squadState.status === "loading" ? (
-                                  <div className="rounded-xl border border-primary/10 bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-                                    Loading squads...
+                                  <div className="grid gap-4">
+                                    <div className="flex items-center gap-2 rounded-xl border border-primary/10 bg-muted/30 p-4 text-sm text-muted-foreground">
+                                      <LoadingSpinner />
+                                      Loading player lists...
+                                    </div>
+                                    <GoalscorerSkeleton />
                                   </div>
                                 ) : null}
 
@@ -807,13 +1079,13 @@ export function MatchOverview({
                                   <div className="grid gap-4">
                                     <div className="flex flex-col gap-2 rounded-xl border border-primary/10 bg-primary/5 p-3 sm:flex-row sm:items-center sm:justify-between">
                                       <p className="text-sm text-muted-foreground">
-                                        {match.prediction?.predictedFirstGoalscorerName
-                                          ? `Selected: ${match.prediction.predictedFirstGoalscorerName}`
+                                        {goalscorerDraft.playerName
+                                          ? `Selected: ${goalscorerDraft.playerName}`
                                           : "No first goalscorer selected yet."}
                                       </p>
                                       <Button
-                                        disabled={!match.prediction?.predictedFirstGoalscorerPlayerId}
-                                        onClick={() => updateFirstGoalscorer(match.id, null)}
+                                        disabled={!goalscorerDraft.playerId}
+                                        onClick={() => updateGoalscorerDraft(match.id, null)}
                                         size="sm"
                                         type="button"
                                         variant="outline"
@@ -824,27 +1096,43 @@ export function MatchOverview({
                                     <div className="grid gap-4 md:grid-cols-2">
                                       <GoalscorerColumn
                                         onSelectPlayer={(player) =>
-                                          updateFirstGoalscorer(match.id, player)
+                                          updateGoalscorerDraft(match.id, player)
                                         }
                                         players={squadState.squads.homePlayers}
-                                        selectedPlayerId={
-                                          match.prediction?.predictedFirstGoalscorerPlayerId
-                                        }
+                                        selectedPlayerId={goalscorerDraft.playerId}
                                         team={squadState.squads.homeTeam}
                                       />
                                       <GoalscorerColumn
                                         onSelectPlayer={(player) =>
-                                          updateFirstGoalscorer(match.id, player)
+                                          updateGoalscorerDraft(match.id, player)
                                         }
                                         players={squadState.squads.awayPlayers}
-                                        selectedPlayerId={
-                                          match.prediction?.predictedFirstGoalscorerPlayerId
-                                        }
+                                        selectedPlayerId={goalscorerDraft.playerId}
                                         team={squadState.squads.awayTeam}
                                       />
                                     </div>
                                   </div>
                                 ) : null}
+                                <DialogFooter>
+                                  <Button
+                                    onClick={() =>
+                                      handleGoalscorerDialogOpenChange(match, false, {
+                                        cancel: () => undefined,
+                                      })
+                                    }
+                                    type="button"
+                                    variant="outline"
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    disabled={!goalscorerDraftChanged}
+                                    onClick={() => saveGoalscorerDraft(match)}
+                                    type="button"
+                                  >
+                                    Save goalscorer
+                                  </Button>
+                                </DialogFooter>
                               </DialogContent>
                             </Dialog>
                             {match.prediction?.predictedFirstGoalscorerName ? (
@@ -895,6 +1183,9 @@ export function MatchOverview({
                             {match.venue}, {match.city}
                           </p>
                         </div>
+                      </div>
+                      <div className="mt-4">
+                        <OddsPanel match={match} />
                       </div>
                     </CardContent>
                   </Card>
