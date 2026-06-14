@@ -585,43 +585,6 @@ export function MatchOverview({
     }));
   }
 
-  function updateFirstGoalscorer(
-    matchId: string,
-    player: Pick<SquadPlayer, "id" | "name"> | null,
-  ) {
-    setMatches((currentMatches) =>
-      currentMatches.map((match) => {
-        if (match.id !== matchId || isMatchLocked(match)) {
-          return match;
-        }
-
-        const currentPrediction = match.prediction ?? {
-          homeScore: 0,
-          awayScore: 0,
-        };
-
-        return {
-          ...match,
-          prediction: {
-            ...currentPrediction,
-            predictedFirstGoalscorerPlayerId: player?.id ?? null,
-            predictedFirstGoalscorerName: player?.name ?? null,
-            pointsAwarded: null,
-            scoringReason: null,
-            scoredAt: null,
-            submittedAt: undefined,
-          },
-        };
-      }),
-    );
-    setSaveStates((currentStates) => ({
-      ...currentStates,
-      [matchId]: {
-        status: "idle",
-      },
-    }));
-  }
-
   function getSavedGoalscorerDraft(match: Match): GoalscorerDraft {
     return {
       playerId: match.prediction?.predictedFirstGoalscorerPlayerId ?? null,
@@ -702,18 +665,83 @@ export function MatchOverview({
     setGoalscorerDialogMatchId(null);
   }
 
-  function saveGoalscorerDraft(match: Match) {
+  async function saveGoalscorerDraft(match: Match) {
     const draft = getGoalscorerDraft(match);
+    const nextPrediction = {
+      ...(match.prediction ?? {
+        homeScore: 0,
+        awayScore: 0,
+      }),
+      predictedFirstGoalscorerPlayerId: draft.playerId,
+      predictedFirstGoalscorerName: draft.playerName,
+      pointsAwarded: null,
+      scoringReason: null,
+      scoredAt: null,
+      submittedAt: undefined,
+    };
+    const nextMatch = {
+      ...match,
+      prediction: nextPrediction,
+    };
 
-    updateFirstGoalscorer(
-      match.id,
-      draft.playerId
-        ? {
-            id: draft.playerId,
-            name: draft.playerName ?? "Selected player",
-          }
-        : null,
+    if (needsKnockoutWinner(nextMatch) && !nextPrediction.predictedWinnerTeamId) {
+      setSaveStates((currentStates) => ({
+        ...currentStates,
+        [match.id]: {
+          status: "error",
+          message: "Choose who advances before saving.",
+        },
+      }));
+      return;
+    }
+
+    setSaveStates((currentStates) => ({
+      ...currentStates,
+      [match.id]: {
+        status: "saving",
+      },
+    }));
+
+    const result = await savePrediction({
+      matchId: match.id,
+      homeScore: nextPrediction.homeScore,
+      awayScore: nextPrediction.awayScore,
+      predictedFirstGoalscorerPlayerId: draft.playerId ?? undefined,
+      predictedWinnerTeamId: nextPrediction.predictedWinnerTeamId ?? undefined,
+    });
+
+    if (result.status === "error") {
+      setSaveStates((currentStates) => ({
+        ...currentStates,
+        [match.id]: {
+          status: "error",
+          message: result.message,
+        },
+      }));
+      return;
+    }
+
+    setMatches((currentMatches) =>
+      currentMatches.map((currentMatch) => {
+        if (currentMatch.id !== match.id) {
+          return currentMatch;
+        }
+
+        return {
+          ...currentMatch,
+          prediction: {
+            ...nextPrediction,
+            submittedAt: result.submittedAt,
+          },
+        };
+      }),
     );
+    setSaveStates((currentStates) => ({
+      ...currentStates,
+      [match.id]: {
+        status: "saved",
+      },
+    }));
     setGoalscorerDialogMatchId(null);
   }
 
@@ -1126,11 +1154,17 @@ export function MatchOverview({
                                     Cancel
                                   </Button>
                                   <Button
-                                    disabled={!goalscorerDraftChanged}
-                                    onClick={() => saveGoalscorerDraft(match)}
+                                    aria-busy={saveState?.status === "saving"}
+                                    disabled={
+                                      !goalscorerDraftChanged || saveState?.status === "saving"
+                                    }
+                                    onClick={() => void saveGoalscorerDraft(match)}
                                     type="button"
                                   >
-                                    Save goalscorer
+                                    {saveState?.status === "saving" ? <LoadingSpinner /> : null}
+                                    {saveState?.status === "saving"
+                                      ? "Saving..."
+                                      : "Save goalscorer"}
                                   </Button>
                                 </DialogFooter>
                               </DialogContent>
