@@ -60,6 +60,14 @@ const bonusRules = [
   },
 ];
 
+const noRacismRules = [
+  {
+    points: "-5",
+    title: "Racism is not allowed.",
+    text: `if you "Racistisch bejegen" the admin by for example calling him "Frietchineeske", you will lose 5 points.`,
+  },
+];
+
 function RuleList({
   rules,
 }: {
@@ -82,9 +90,13 @@ function RuleList({
           </div>
           <div>
             <p className="font-semibold tracking-tight">{rule.title}</p>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">{rule.text}</p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              {rule.text}
+            </p>
             {rule.example ? (
-              <p className="mt-2 text-xs leading-5 text-muted-foreground">{rule.example}</p>
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                {rule.example}
+              </p>
             ) : null}
           </div>
         </div>
@@ -99,7 +111,10 @@ export function RulesPage() {
       <div className="mx-auto grid max-w-4xl gap-6">
         <Card className="border-primary/15 bg-card bg-[image:var(--gradient-panel)] p-2 shadow-[0_24px_70px_-48px_var(--shadow-panel-color)] sm:p-4">
           <CardHeader className="gap-4">
-            <Badge variant="outline" className="w-fit uppercase tracking-[0.18em]">
+            <Badge
+              variant="outline"
+              className="w-fit uppercase tracking-[0.18em]"
+            >
               Rules
             </Badge>
             <CardTitle className="text-4xl font-semibold tracking-tight sm:text-5xl">
@@ -108,9 +123,10 @@ export function RulesPage() {
           </CardHeader>
           <CardContent>
             <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-              Group-stage predictions use the best matching score category. From the Round of 16,
-              points are added together: submitting, winner, exact score, and goal difference can all
-              count. The first goalscorer bonus is added on top when you pick the right player.
+              Group-stage predictions use the best matching score category. From
+              the Round of 16, points are added together: submitting, winner,
+              exact score, and goal difference can all count. The first
+              goalscorer bonus is added on top when you pick the right player.
             </p>
           </CardContent>
         </Card>
@@ -147,6 +163,17 @@ export function RulesPage() {
           </CardHeader>
           <CardContent>
             <RuleList rules={bonusRules} />
+          </CardContent>
+        </Card>
+
+        <Card className="border-primary/10 bg-card p-2 sm:p-4">
+          <CardHeader>
+            <CardTitle className="text-2xl font-semibold tracking-tight">
+              #NO RACISM
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RuleList rules={noRacismRules} />
           </CardContent>
         </Card>
       </div>
