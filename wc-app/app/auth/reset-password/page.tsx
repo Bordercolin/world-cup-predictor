@@ -5,81 +5,85 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-import { signInWithPassword } from "./actions";
+import { updatePassword } from "./actions";
 
-export default async function LoginPage({
+const errorMessages: Record<string, string> = {
+  missing: "Fill in both password fields.",
+  "short-password": "Use a password of at least 6 characters.",
+  "password-match": "The passwords do not match.",
+  update: "We could not update your password. Request a new reset link and try again.",
+};
+
+export default async function ResetPasswordPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ error?: string; message?: string }>;
+  searchParams?: Promise<{ error?: string }>;
 }) {
   const params = await searchParams;
-  const message =
-    params?.message === "password-updated" ? "Password updated. Sign in with your new password." : null;
+  const errorMessage = params?.error ? errorMessages[params.error] : null;
 
   return (
     <main className="grid min-h-screen place-items-center bg-background bg-[image:var(--gradient-page)] px-5 py-10 text-foreground">
       <Card className="w-full max-w-md border-primary/15 bg-card bg-[image:var(--gradient-panel)] p-2 shadow-[0_24px_70px_-48px_var(--shadow-panel-color)] sm:p-4">
         <CardHeader className="gap-4">
           <Badge variant="outline" className="w-fit uppercase tracking-[0.18em]">
-            World Cup 2026
+            New password
           </Badge>
           <CardTitle className="text-4xl font-semibold tracking-tight">
-            Log in to predict
+            Choose a new password.
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           <p className="text-sm leading-6 text-muted-foreground">
-            Use your email and password to continue to your prediction group.
+            Set a fresh password for your Prono Club account. You will sign in again after it is
+            saved.
           </p>
 
-          {params?.error ? (
+          {errorMessage ? (
             <p className="rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-              We could not log you in with those details.
-            </p>
-          ) : null}
-          {message ? (
-            <p className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-primary">
-              {message}
+              {errorMessage}
             </p>
           ) : null}
 
-          <form action={signInWithPassword} className="grid gap-4">
-            <div className="grid gap-2">
-              <label className="text-sm font-medium" htmlFor="email">
-                Email
-              </label>
-              <Input autoComplete="email" id="email" name="email" required type="email" />
-            </div>
+          <form action={updatePassword} className="grid gap-4">
             <div className="grid gap-2">
               <label className="text-sm font-medium" htmlFor="password">
-                Password
+                New password
               </label>
               <Input
-                autoComplete="current-password"
+                autoComplete="new-password"
                 id="password"
+                minLength={6}
                 name="password"
                 required
                 type="password"
               />
             </div>
+            <div className="grid gap-2">
+              <label className="text-sm font-medium" htmlFor="repeatPassword">
+                Repeat new password
+              </label>
+              <Input
+                autoComplete="new-password"
+                id="repeatPassword"
+                minLength={6}
+                name="repeatPassword"
+                required
+                type="password"
+              />
+            </div>
             <Button className="w-full" size="lg" type="submit">
-              Log in
+              Update password
             </Button>
           </form>
 
-          <p className="text-center text-sm">
+          <p className="text-center text-sm text-muted-foreground">
+            Link expired?{" "}
             <Link
               className="font-medium text-primary underline-offset-4 hover:underline"
               href="/auth/forgot-password"
             >
-              Forgot password?
-            </Link>
-          </p>
-
-          <p className="text-center text-sm text-muted-foreground">
-            No account yet?{" "}
-            <Link className="font-medium text-primary underline-offset-4 hover:underline" href="/register">
-              Register
+              Request a new one
             </Link>
           </p>
         </CardContent>

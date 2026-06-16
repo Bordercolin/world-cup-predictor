@@ -54,6 +54,10 @@ export async function proxy(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const isAuthPath = pathname.startsWith("/auth");
+  const isAuthCallbackPath = pathname.startsWith("/auth/callback");
+  const isResetPasswordPath = pathname.startsWith("/auth/reset-password");
+  const isPasswordRecoveryPath =
+    isResetPasswordPath && request.nextUrl.searchParams.get("recovery") === "1";
   const isLoginPath = pathname.startsWith("/login");
   const isRegisterPath = pathname.startsWith("/register");
   const isNicknamePath = pathname.startsWith("/onboarding/nickname");
@@ -67,6 +71,10 @@ export async function proxy(request: NextRequest) {
     return redirectPreservingSession(request, supabaseResponse, "/login");
   }
 
+  if (isAuthPath && !isAuthCallbackPath && !isPasswordRecoveryPath) {
+    return redirectPreservingSession(request, supabaseResponse, "/");
+  }
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("user_id")
@@ -74,7 +82,7 @@ export async function proxy(request: NextRequest) {
     .maybeSingle();
 
   if (!profile) {
-    if (isNicknamePath || isAuthPath) {
+    if (isNicknamePath || isAuthCallbackPath || isPasswordRecoveryPath) {
       return supabaseResponse;
     }
 
@@ -89,7 +97,7 @@ export async function proxy(request: NextRequest) {
     .maybeSingle();
 
   if (!membership) {
-    if (isGroupPath || isAuthPath) {
+    if (isGroupPath || isAuthCallbackPath || isPasswordRecoveryPath) {
       return supabaseResponse;
     }
 
