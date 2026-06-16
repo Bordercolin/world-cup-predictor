@@ -6,6 +6,19 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 
 function getBaseUrl(headersList: Headers) {
+  const configuredUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.SITE_URL ??
+    process.env.VERCEL_PROJECT_PRODUCTION_URL;
+
+  if (configuredUrl) {
+    const normalizedUrl = configuredUrl.startsWith("http")
+      ? configuredUrl
+      : `https://${configuredUrl}`;
+
+    return normalizedUrl.replace(/\/$/, "");
+  }
+
   const origin = headersList.get("origin");
 
   if (origin) {
@@ -15,7 +28,11 @@ function getBaseUrl(headersList: Headers) {
   const host = headersList.get("x-forwarded-host") ?? headersList.get("host");
   const protocol = headersList.get("x-forwarded-proto") ?? "http";
 
-  return host ? `${protocol}://${host}` : "";
+  if (host) {
+    return `${protocol}://${host}`;
+  }
+
+  return "http://localhost:3000";
 }
 
 export async function requestPasswordReset(formData: FormData) {
