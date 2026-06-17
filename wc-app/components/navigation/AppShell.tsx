@@ -14,6 +14,10 @@ const navItems = [
     label: "Leaderboard",
   },
   {
+    href: "/played-matches",
+    label: "Played matches",
+  },
+  {
     href: "/rules",
     label: "Rules",
   },

@@ -217,6 +217,7 @@ export default async function Home() {
     .select(
       "id, match_number, round, group_name, home_team_id, home_team, home_team_code, away_team_id, away_team, away_team_code, stadium, stadium_city, stadium_country, kickoff_utc, status, odds_home_win, odds_draw, odds_away_win, odds_home_implied_probability, odds_draw_implied_probability, odds_away_implied_probability, odds_last_synced_at",
     )
+    .neq("status", "completed")
     .order("kickoff_utc", { ascending: true })
     .order("match_number", { ascending: true })
     .returns<MatchRow[]>();
