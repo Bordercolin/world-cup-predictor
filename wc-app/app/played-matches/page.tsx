@@ -17,14 +17,21 @@ type CompletedMatchRow = {
   kickoff_utc: string;
   home_score: number;
   away_score: number;
+  first_goalscorer_player_id: string | null;
 };
 
 type PredictionRow = {
   match_id: number;
   predicted_home_score: number;
   predicted_away_score: number;
+  predicted_first_goalscorer_player_id: string | null;
   points_awarded: number | null;
   scoring_reason: string | null;
+};
+
+type GoalscorerPlayerRow = {
+  id: string;
+  name: string;
 };
 
 const fifaCodeToCountryCode: Record<string, string> = {
@@ -89,6 +96,7 @@ function formatDateLabel(kickoffUtc: string) {
 function mapCompletedMatchRow(
   match: CompletedMatchRow,
   prediction?: PredictionRow,
+  goalscorerNamesById = new Map<string, string>(),
 ): PlayedMatch {
   return {
     id: String(match.id),
@@ -100,10 +108,16 @@ function mapCompletedMatchRow(
     awayCountryCode: match.away_team_code ? fifaCodeToCountryCode[match.away_team_code] ?? null : null,
     homeScore: match.home_score,
     awayScore: match.away_score,
+    firstGoalscorerName: match.first_goalscorer_player_id
+      ? goalscorerNamesById.get(match.first_goalscorer_player_id) ?? null
+      : null,
     prediction: prediction
       ? {
           homeScore: prediction.predicted_home_score,
           awayScore: prediction.predicted_away_score,
+          predictedFirstGoalscorerName: prediction.predicted_first_goalscorer_player_id
+            ? goalscorerNamesById.get(prediction.predicted_first_goalscorer_player_id) ?? null
+            : null,
           pointsAwarded: prediction.points_awarded,
           scoringReason: prediction.scoring_reason,
         }
@@ -119,7 +133,7 @@ export default async function PlayedMatchesRoute() {
   const { data, error } = await supabase
     .from("matches")
     .select(
-      "id, match_number, round, group_name, home_team, home_team_code, away_team, away_team_code, kickoff_utc, home_score, away_score",
+      "id, match_number, round, group_name, home_team, home_team_code, away_team, away_team_code, kickoff_utc, home_score, away_score, first_goalscorer_player_id",
     )
     .eq("status", "completed")
     .not("home_score", "is", null)
@@ -131,13 +145,34 @@ export default async function PlayedMatchesRoute() {
     ? await supabase
         .from("predictions")
         .select(
-          "match_id, predicted_home_score, predicted_away_score, points_awarded, scoring_reason",
+          "match_id, predicted_home_score, predicted_away_score, predicted_first_goalscorer_player_id, points_awarded, scoring_reason",
         )
         .eq("user_id", user.id)
         .returns<PredictionRow[]>()
     : { data: [] };
+  const goalscorerPlayerIds = Array.from(
+    new Set(
+      [
+        ...(data ?? []).map((match) => match.first_goalscorer_player_id),
+        ...(predictionData ?? []).map(
+          (prediction) => prediction.predicted_first_goalscorer_player_id,
+        ),
+      ].filter((playerId): playerId is string => Boolean(playerId)),
+    ),
+  );
+  const { data: goalscorerPlayerData } =
+    goalscorerPlayerIds.length > 0
+      ? await supabase
+          .from("team_players")
+          .select("id, name")
+          .in("id", goalscorerPlayerIds)
+          .returns<GoalscorerPlayerRow[]>()
+      : { data: [] };
   const predictionsByMatch = new Map(
     (predictionData ?? []).map((prediction) => [prediction.match_id, prediction]),
+  );
+  const goalscorerNamesById = new Map(
+    (goalscorerPlayerData ?? []).map((player) => [player.id, player.name]),
   );
 
   return (
@@ -148,7 +183,7 @@ export default async function PlayedMatchesRoute() {
           error
             ? []
             : (data ?? []).map((match) =>
-                mapCompletedMatchRow(match, predictionsByMatch.get(match.id)),
+                mapCompletedMatchRow(match, predictionsByMatch.get(match.id), goalscorerNamesById),
               )
         }
       />

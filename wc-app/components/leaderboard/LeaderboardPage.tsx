@@ -15,7 +15,7 @@ export function LeaderboardPage({ leaderboard }: { leaderboard: LeaderboardEntry
             <Badge variant="outline" className="w-fit uppercase tracking-[0.18em]">
               Leaderboard
             </Badge>
-            <CardTitle className="text-4xl font-semibold tracking-tight sm:text-5xl">
+            <CardTitle className="text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
               {groupName}
             </CardTitle>
           </CardHeader>
@@ -34,28 +34,28 @@ export function LeaderboardPage({ leaderboard }: { leaderboard: LeaderboardEntry
                 {leaderboard.map((entry) => (
                   <Link
                     aria-label={`View completed predictions for ${entry.nickname}`}
-                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl border px-4 py-3 ${
+                    className={`grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl border px-3 py-3 transition-colors sm:gap-4 sm:px-4 ${
                       entry.isCurrentUser
                         ? "border-primary/20 bg-primary/10 bg-[image:var(--gradient-score)] ring-1 ring-primary/20"
-                        : "bg-muted/25"
+                        : "bg-muted/25 hover:bg-muted/40"
                     }`}
                     href={`/leaderboard/${entry.userId}`}
                     key={entry.userId}
                   >
-                    <span className="grid size-9 place-items-center rounded-full border border-primary/10 bg-background font-mono text-sm font-bold text-primary">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-full border border-primary/10 bg-background font-mono text-sm font-bold text-primary">
                       {entry.rank}
                     </span>
                     <div className="min-w-0">
-                      <p className="truncate text-lg font-semibold tracking-tight">
+                      <p className="truncate text-base font-semibold tracking-tight sm:text-lg">
                         {entry.nickname}
                         {entry.isCurrentUser ? " (you)" : ""}
                       </p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="truncate text-xs text-muted-foreground sm:text-sm">
                         {entry.predictionsSubmitted} predictions submitted
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="font-mono text-2xl font-semibold tabular-nums">
+                    <div className="shrink-0 text-right">
+                      <p className="font-mono text-xl font-semibold tabular-nums sm:text-2xl">
                         {entry.points}
                       </p>
                       <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">

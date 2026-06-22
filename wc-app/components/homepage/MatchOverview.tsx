@@ -241,23 +241,23 @@ function TeamName({
 
   return (
     <div
-      className={`flex items-center gap-3 ${
+      className={`flex min-w-0 items-center gap-3 ${
         align === "right" ? "justify-start sm:justify-end" : ""
       }`}
     >
       {countryCode ? (
         <ReactCountryFlag
           aria-label={`${displayName} flag`}
-          className="rounded-[0.2rem] text-3xl shadow-sm"
+          className="shrink-0 rounded-[0.2rem] text-2xl shadow-sm sm:text-3xl"
           countryCode={countryCode}
           svg
         />
       ) : (
-        <span className="grid size-9 place-items-center rounded-md bg-muted font-mono text-xs font-bold text-muted-foreground">
+        <span className="grid size-9 shrink-0 place-items-center rounded-md bg-muted font-mono text-xs font-bold text-muted-foreground">
           TBD
         </span>
       )}
-      <p className="text-xl font-semibold tracking-tight">{displayName}</p>
+      <p className="truncate text-lg font-semibold tracking-tight sm:text-xl">{displayName}</p>
     </div>
   );
 }
@@ -871,7 +871,7 @@ export function MatchOverview({
                 <Badge variant="outline" className="w-fit uppercase tracking-[0.18em]">
                   World Cup 2026
                 </Badge>
-                <CardTitle className="text-4xl font-semibold tracking-tight sm:text-5xl">
+                <CardTitle className="text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
                   {currentPlayer?.groupName ?? "Your group"}
                 </CardTitle>
               </div>
@@ -946,13 +946,13 @@ export function MatchOverview({
                     className="border-primary/10 bg-card"
                   >
                     <CardContent>
-                      <div className="grid gap-4 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-                        <div className="min-w-0">
+                      <div className="grid gap-4 sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:gap-6">
+                        <div className="order-1 min-w-0 sm:order-none">
                           <TeamName countryCode={match.homeCountryCode} name={match.homeTeam} />
                           <p className="mt-1 text-sm text-muted-foreground">{match.group}</p>
                         </div>
 
-                        <div className="grid justify-items-center gap-3 text-center">
+                        <div className="order-3 grid justify-items-center gap-3 text-center sm:order-none">
                           <div>
                             <p className="font-mono text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
                               {match.dateLabel} - {match.kickoffTime}
@@ -1207,7 +1207,7 @@ export function MatchOverview({
                           </div>
                         </div>
 
-                        <div className="min-w-0 text-left sm:text-right">
+                        <div className="order-2 min-w-0 text-left sm:order-none sm:text-right">
                           <TeamName
                             align="right"
                             countryCode={match.awayCountryCode}

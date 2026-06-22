@@ -13,9 +13,11 @@ export type PlayedMatch = {
   awayCountryCode: string | null;
   homeScore: number;
   awayScore: number;
+  firstGoalscorerName: string | null;
   prediction?: {
     homeScore: number;
     awayScore: number;
+    predictedFirstGoalscorerName: string | null;
     pointsAwarded: number | null;
     scoringReason: string | null;
   };
@@ -34,23 +36,23 @@ function TeamLabel({
 
   return (
     <div
-      className={`flex items-center gap-3 ${
-        align === "right" ? "justify-start sm:justify-end" : ""
+      className={`flex min-w-0 items-center gap-2 sm:gap-3 ${
+        align === "right" ? "justify-end" : ""
       }`}
     >
       {countryCode ? (
         <ReactCountryFlag
           aria-label={`${displayName} flag`}
-          className="rounded-[0.2rem] text-3xl shadow-sm"
+          className="shrink-0 rounded-[0.2rem] text-2xl shadow-sm sm:text-3xl"
           countryCode={countryCode}
           svg
         />
       ) : (
-        <span className="grid size-9 place-items-center rounded-md bg-muted font-mono text-xs font-bold text-muted-foreground">
+        <span className="grid size-8 shrink-0 place-items-center rounded-md bg-muted font-mono text-xs font-bold text-muted-foreground sm:size-9">
           TBD
         </span>
       )}
-      <p className="text-lg font-semibold tracking-tight">{displayName}</p>
+      <p className="truncate text-base font-semibold tracking-tight sm:text-lg">{displayName}</p>
     </div>
   );
 }
@@ -90,6 +92,46 @@ function ScoreBlock({
   );
 }
 
+function GoalscorerResult({
+  actualName,
+  predictedName,
+}: {
+  actualName: string | null;
+  predictedName?: string | null;
+}) {
+  const isCorrect = Boolean(actualName && predictedName && actualName === predictedName);
+
+  return (
+    <div className="rounded-xl border border-primary/10 bg-muted/25 p-3">
+      <p className="font-mono text-[0.7rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+        First goalscorer
+      </p>
+      <div className="mt-3 grid gap-2 text-sm">
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground">Actual</p>
+          <p className="truncate font-semibold text-foreground">
+            {actualName ?? "None recorded"}
+          </p>
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground">Your prediction</p>
+          <p
+            className={`truncate font-semibold ${
+              predictedName
+                ? isCorrect
+                  ? "text-primary"
+                  : "text-foreground"
+                : "text-muted-foreground"
+            }`}
+          >
+            {predictedName ?? "No goalscorer predicted"}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function PlayedMatchesPage({
   loadError,
   matches,
@@ -111,7 +153,7 @@ export function PlayedMatchesPage({
             <Badge variant="outline" className="w-fit uppercase tracking-[0.18em]">
               Played matches
             </Badge>
-            <CardTitle className="text-4xl font-semibold tracking-tight sm:text-5xl">
+            <CardTitle className="text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
               Results and your points
             </CardTitle>
           </CardHeader>
@@ -150,50 +192,63 @@ export function PlayedMatchesPage({
           {matches.length > 0 ? (
             matches.map((match) => (
               <Card className="border-primary/10 bg-card" key={match.id}>
-                <CardContent>
-                  <div className="grid gap-5 lg:grid-cols-[1fr_auto_1fr_auto] lg:items-center">
+                <CardContent className="grid gap-5">
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-4">
                     <div className="min-w-0">
                       <TeamLabel countryCode={match.homeCountryCode} name={match.homeTeam} />
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {match.dateLabel} · {match.group}
-                      </p>
                     </div>
-
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-none">
-                      <ScoreBlock
-                        awayScore={match.awayScore}
-                        homeScore={match.homeScore}
-                        label="Final score"
-                      />
-                      <ScoreBlock
-                        awayScore={match.prediction?.awayScore ?? null}
-                        homeScore={match.prediction?.homeScore ?? null}
-                        label="Your prediction"
-                        muted
-                      />
-                    </div>
-
-                    <div className="min-w-0 text-left lg:text-right">
+                    <ScoreBlock
+                      awayScore={match.awayScore}
+                      homeScore={match.homeScore}
+                      label="Final score"
+                    />
+                    <div className="min-w-0 text-right">
                       <TeamLabel
                         align="right"
                         countryCode={match.awayCountryCode}
                         name={match.awayTeam}
                       />
                     </div>
+                  </div>
 
-                    <div className="rounded-xl border border-primary/10 bg-muted/25 px-4 py-3 text-left lg:min-w-40 lg:text-right">
+                  <p className="text-center text-xs text-muted-foreground sm:text-left">
+                    {match.dateLabel} · {match.group}
+                  </p>
+
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="grid justify-items-center gap-2 rounded-xl border border-border/70 bg-muted/25 px-4 py-3 text-center">
                       <p className="font-mono text-[0.7rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                        Your prediction
+                      </p>
+                      <div className="grid grid-cols-[2.5rem_auto_2.5rem] items-center gap-2 text-muted-foreground">
+                        <span className="font-mono text-2xl font-semibold tabular-nums">
+                          {match.prediction?.homeScore ?? "-"}
+                        </span>
+                        <span className="text-xs font-bold uppercase tracking-[0.16em]">vs</span>
+                        <span className="font-mono text-2xl font-semibold tabular-nums">
+                          {match.prediction?.awayScore ?? "-"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <GoalscorerResult
+                      actualName={match.firstGoalscorerName}
+                      predictedName={match.prediction?.predictedFirstGoalscorerName}
+                    />
+
+                    <div className="grid content-start gap-1 rounded-xl border border-primary/15 bg-primary/10 bg-[image:var(--gradient-score)] px-4 py-3 text-primary">
+                      <p className="font-mono text-[0.7rem] font-bold uppercase tracking-[0.16em]">
                         Points
                       </p>
-                      <p className="mt-1 font-mono text-3xl font-semibold tabular-nums">
+                      <p className="font-mono text-3xl font-semibold tabular-nums">
                         {match.prediction?.pointsAwarded ?? "-"}
                       </p>
                       {match.prediction?.scoringReason ? (
-                        <p className="mt-2 max-w-64 text-xs leading-5 text-muted-foreground lg:ml-auto">
+                        <p className="text-xs leading-5 text-muted-foreground">
                           {match.prediction.scoringReason}
                         </p>
                       ) : (
-                        <p className="mt-2 text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           {match.prediction ? "Scoring pending." : "No prediction submitted."}
                         </p>
                       )}
